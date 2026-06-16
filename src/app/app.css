@@ -1,0 +1,21 @@
+    /* Tailwind cubre la mayoría, 
+   pero puedes añadir transiciones si quieres animar la apertura del sidebar. */
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar-open .sidebar {
+  transform: translateX(0);
+}
+/* Tailwind maneja casi todo, 
+   pero puedes añadir transiciones suaves si lo deseas */
+
+button.fixed {
+  transition: all 0.2s ease;
+}
+.router-outlet{
+    color-scheme: light;
+    color: #fafafa;
+}

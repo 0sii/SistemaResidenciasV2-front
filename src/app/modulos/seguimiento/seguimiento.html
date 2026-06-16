@@ -1,0 +1,1710 @@
+<p-toast position="top-right"></p-toast>
+
+
+
+<div *ngIf="viewState === 'forbidden'" class="flex flex-col items-center justify-center h-96 text-center">
+    <img src="assets/img/forbidden.svg" alt="Acceso denegado" class="w-64 mb-4" />
+    <h2 class="text-xl font-semibold text-gray-700">Acceso restringido</h2>
+    <p class="text-gray-500 mt-2">
+        No tienes permiso para visualizar este proyecto.
+    </p>
+</div>
+
+<div *ngIf="viewState === 'error'" class="text-center text-red-600 mt-10">
+    Ocurrió un error al cargar la información.
+</div>
+
+
+<div *ngIf="viewState === 'ok'"
+    class="min-h-screen w-full flex flex-col bg-transparent dark:bg-gray-800 text-slate-900 dark:text-white p-4">
+
+    <!-- 🔝 Título del proyecto -->
+    <div class="px-2 pt-2">
+        <div class="text-sm text-slate-500 dark:text-slate-300">Seguimiento de residencia</div>
+
+        <div class="mt-1 flex items-start justify-between gap-3 flex-wrap">
+            <div class="min-w-[240px]">
+                <h2 class="text-3xl font-bold">{{ tituloProyecto }}</h2>
+
+                <div class="mt-2 flex flex-wrap gap-2 items-center">
+                    <p-tag *ngIf="proyectoIdEstado"
+                        [value]="'Estado proyecto: ' + getEstadoProyectoUI(proyectoIdEstado).label"
+                        [severity]="getEstadoProyectoUI(proyectoIdEstado).severity">
+                    </p-tag>
+
+                </div>
+            </div>
+
+            <!-- ✅ Botón SIEMPRE visible (si hay proyecto) -->
+            <div class="flex items-center gap-2 flex-wrap">
+                <button *ngIf="puedeSalirseDelProyecto" pButton type="button"
+                    class="p-button-sm p-button-danger p-button-outlined" icon="pi pi-sign-out"
+                    [loading]="leavingProject" label="Salirme del proyecto" (click)="salirseDelProyecto()">
+                </button>
+
+                <button *ngIf="idProyecto" pButton type="button" class="p-button-sm p-button-outlined"
+                    icon="pi pi-file-edit"
+                    [label]="(proyectoCancelado || !canEditProyecto) ? 'Ver proyecto' : 'Editar proyecto'"
+                    (click)="abrirDialogProyecto()">
+                </button>
+
+            </div>
+        </div>
+
+
+
+        <!-- 👥 Equipo -->
+        <div class="mt-4 rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-4">
+            <div class="flex items-center justify-between gap-3">
+                <h3 class="text-lg font-semibold">Equipo</h3>
+                <div class="text-sm text-slate-500 dark:text-slate-300">
+                    {{ equipo.length }} <span *ngIf="cupoProyecto">/ {{ cupoProyecto }}</span>
+                </div>
+            </div>
+
+            <div *ngIf="mensajeCupoProyecto"
+                class="mt-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 px-3 py-2 text-sm text-amber-800 dark:text-amber-200">
+                {{ mensajeCupoProyecto }}
+            </div>
+
+            <div *ngIf="puedeSalirseDelProyecto" class="mt-2 text-xs text-slate-500 dark:text-slate-300">
+                Puedes salirte del proyecto solo durante la etapa 1.
+            </div>
+
+            <div class="mt-4">
+                <p-table [value]="equipo" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[5,10,25]"
+                    [tableStyle]="{ 'min-width': '40rem' }">
+
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th>No. Control</th>
+                            <th>Nombre</th>
+                            <th>Correo</th>
+                        </tr>
+                    </ng-template>
+
+                    <ng-template pTemplate="body" let-e>
+                        <tr>
+                            <td>{{ e.noControl }}</td>
+                            <td>{{ e.nombre }} {{ e.apellidoPaterno }} {{ e.apellidoMaterno }}</td>
+                            <td>{{ e.correo || e.Correo }}</td>
+                        </tr>
+                    </ng-template>
+
+                    <ng-template pTemplate="emptymessage">
+                        <tr>
+                            <td colspan="3" class="text-center text-slate-500 py-4">
+                                Aún no hay integrantes.
+                            </td>
+                        </tr>
+                    </ng-template>
+
+                </p-table>
+            </div>
+        </div>
+
+        <!-- ✅ NUEVO: Invitaciones enviadas -->
+
+
+        <!-- ✅ Invitaciones (solo si es propuesta de alumno) -->
+        <div *ngIf="puedeInvitar  && !proyectoCancelado"
+            class="mt-4 rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-4">
+
+
+            <div class="flex items-center justify-between gap-3">
+                <h3 class="text-lg font-semibold">Invitaciones</h3>
+
+                <div class="text-sm text-slate-500 dark:text-slate-300">
+                    Pendientes: {{ invPendientes.length }} · Aceptadas: {{ invAceptadas.length }} · Rechazadas: {{
+                    invRechazadas.length }}
+                </div>
+            </div>
+
+            <!-- ➕ Invitar (solo líder) -->
+            <div *ngIf="puedeInvitar; else noEsLiderMsg"
+                class="mt-3 flex flex-col sm:flex-row gap-2 items-start sm:items-end">
+
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Invitar por No. de
+                        control</label>
+                    <input type="text" [(ngModel)]="noControlInvitar" maxlength="11" (input)="onNoControlInvitarInput()"
+                        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md"
+                        placeholder="No. de control" />
+
+                    <!-- Preview -->
+                    @if(noControlInvitar.trim().length){
+                    <div class="mt-1 text-sm">
+                        <ng-container *ngIf="invLookupLoading">Buscando...</ng-container>
+
+                        <ng-container *ngIf="!invLookupLoading && invLookupError">
+                            <span class="text-red-500">{{ invLookupError }}</span>
+                        </ng-container>
+
+                        <ng-container *ngIf="!invLookupLoading && !invLookupError && invLookupEst">
+                            <span class="text-slate-500 dark:text-slate-300">Invitarás a:</span>
+                            <span class="font-semibold">
+                                {{ invLookupEst.nombre }} {{ invLookupEst.apellidoPaterno }} {{
+                                invLookupEst.apellidoMaterno }}
+                            </span>
+                        </ng-container>
+                    </div>
+                    }
+                    <small class="text-slate-500">
+                        Se manda invitación. El alumno la acepta/rechaza desde el Banco de Proyectos.
+                    </small>
+                </div>
+
+                @if(!(loadingInv || !noControlInvitar || !idProyecto)) {
+                <button pButton type="button" label="Invitar" (click)="invitar()"></button>
+                } @else {
+                <!-- opcional: texto guía -->
+                <small class="text-slate-500 dark:text-slate-300">
+                    Completa el No. de control para poder invitar.
+                </small>
+                }
+
+            </div>
+
+            <ng-template #noEsLiderMsg>
+                <div class="mt-3 text-sm text-slate-500 dark:text-slate-300">
+                    Solo el líder puede invitar integrantes.
+                </div>
+            </ng-template>
+
+            <!-- Listas (se ven solo si soy líder porque solo líder carga "enviadas") -->
+            <div *ngIf="puedeInvitar  && !proyectoCancelado" class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
+
+                <!-- Pendientes
+                <div class="rounded-lg border border-slate-200/60 dark:border-slate-700/60 p-3">
+                    <div class="font-semibold mb-2">Pendientes</div>
+                    <p-table [value]="invPendientes" [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5,10]"
+                        [tableStyle]="{ 'min-width': '20rem' }">
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th>No. Control</th>
+                                <th>Nombre</th>
+                            </tr>
+                        </ng-template>
+
+                        <ng-template pTemplate="body" let-i>
+                            <tr>
+                                <td>{{ i.noControlInvitado }}</td>
+                                <td>{{ i.nombreInvitado }}</td>
+                            </tr>
+                        </ng-template>
+
+                        <ng-template pTemplate="emptymessage">
+                            <tr>
+                                <td colspan="2" class="text-center text-slate-500 py-3">
+                                    No hay invitaciones pendientes.
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </div>
+
+                 Aceptadas
+                <div class="rounded-lg border border-slate-200/60 dark:border-slate-700/60 p-3">
+                    <div class="font-semibold mb-2">Aceptadas</div>
+                    <p-table [value]="invAceptadas" [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5,10]"
+                        [tableStyle]="{ 'min-width': '20rem' }">
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th>No. Control</th>
+                                <th>Nombre</th>
+                            </tr>
+                        </ng-template>
+
+                        <ng-template pTemplate="body" let-i>
+                            <tr>
+                                <td>{{ i.noControlInvitado }}</td>
+                                <td>{{ i.nombreInvitado }}</td>
+                            </tr>
+                        </ng-template>
+
+                        <ng-template pTemplate="emptymessage">
+                            <tr>
+                                <td colspan="2" class="text-center text-slate-500 py-3">
+                                    Aún nadie acepta.
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </div>
+
+                 Rechazadas 
+                <div class="rounded-lg border border-slate-200/60 dark:border-slate-700/60 p-3">
+                    <div class="font-semibold mb-2">Rechazadas</div>
+                    <p-table [value]="invRechazadas" [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5,10]"
+                        [tableStyle]="{ 'min-width': '20rem' }">
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th>No. Control</th>
+                                <th>Nombre</th>
+                            </tr>
+                        </ng-template>
+
+                        <ng-template pTemplate="body" let-i>
+                            <tr>
+                                <td>{{ i.noControlInvitado }}</td>
+                                <td>{{ i.nombreInvitado }}</td>
+                            </tr>
+                        </ng-template>
+
+                        <ng-template pTemplate="emptymessage">
+                            <tr>
+                                <td colspan="2" class="text-center text-slate-500 py-3">
+                                    Nadie ha rechazado.
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </div> -->
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+    <!-- ========================= -->
+    <!-- 🧭 Etapas tipo carrusel -->
+    <!-- ========================= -->
+    <div class="mt-4 rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-4">
+
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+            <div class="text-sm text-slate-500 dark:text-slate-300">Seguimiento por etapas</div>
+            <div class="text-lg font-semibold text-slate-900 dark:text-white">
+                Etapa {{ activeStageIndex + 1 }} · {{ stages[activeStageIndex].label }}
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-2">
+        <ng-container *ngFor="let s of stages; let i = index">
+            <button
+                #stageBtn
+                type="button"
+                [attr.aria-current]="i === activeStageIndex ? 'step' : null"
+                (click)="goToStage(i)"
+                class="rounded-lg border px-4 py-3 text-left transition-all"
+                [ngClass]="{
+                    'border-slate-300 bg-slate-100 text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white': i === activeStageIndex,
+                    'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700/70': i !== activeStageIndex
+                }">
+
+                <div class="text-xs font-semibold uppercase tracking-wide opacity-80">
+                    Etapa {{ i + 1 }}
+                </div>
+
+                <div class="mt-1 font-semibold">
+                    {{ s.label }}
+                </div>
+
+                <div class="mt-1 text-xs"
+                    [ngClass]="{
+                        'text-slate-600 dark:text-slate-200': i === activeStageIndex,
+                        'text-slate-500 dark:text-slate-300': i !== activeStageIndex
+                    }">
+                    {{ i === activeStageIndex ? 'Actual' : ((i === 0 || canEnterStage(i)) ? 'Disponible' : 'Bloqueada') }}
+                </div>
+            </button>
+        </ng-container>
+    </div>
+
+    <div #stageViewport tabindex="-1" class="mt-4 min-h-[65vh] w-full">
+            <ng-container [ngSwitch]="activeStageIndex">
+
+                <!-- ✅ Etapa 1: Anteproyecto -->
+                <div *ngSwitchCase="0" class="w-full">
+                    <!-- 👇 AQUÍ va tu bloque actual de ANTEPROYECTO + HISTORIAL + DIALOG -->
+                    <!-- (te lo dejo abajo listo para pegar sin cambiar tu lógica) -->
+
+                    <div
+    class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-4">
+    <div class="flex items-start justify-between gap-3 flex-wrap">
+        <div class="space-y-2">
+            <div class="flex items-center gap-2 flex-wrap">
+                <span
+                    class="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                    Etapa 1
+                </span>
+
+                <span
+                    class="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                    Estado: {{ estadoEtapaLabel(1) }}
+                </span>
+            </div>
+
+            <div>
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Anteproyecto</h3>
+
+                <div class="mt-1 text-xs text-slate-500 dark:text-slate-300"
+                    *ngIf="fechaAnteproyectoAprobado; else anteSinFecha">
+                    Aprobado el
+                    <span class="font-semibold">{{ fechaAnteproyectoAprobado | fechaEs:true }}</span>.
+                    <ng-container *ngIf="fechaProgramadaRp1">
+                        · RP1 sugerido:
+                        <span class="font-semibold">{{ fechaProgramadaRp1 | fechaEs:false }}</span>
+                    </ng-container>
+                </div>
+
+                <ng-template #anteSinFecha>
+                    <div class="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                        Cuando el anteproyecto sea aprobado, se calculará la fecha sugerida del Reporte parcial 1.
+                    </div>
+                </ng-template>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+        Revisor asignado:
+        <span class="font-semibold">{{ revisorAnteproyectoNombre || 'Sin asignar' }}</span>
+    </div>
+
+                        <!-- ✅ Tu subida de anteproyecto (NO la cambio, solo la dejo debajo del encabezado) -->
+                        <div class="mt-4">
+                            <div class="flex flex-col md:flex-row gap-4 items-start md:items-end justify-between">
+                                <div class="flex items-center gap-3">
+                                    @if(puedeSubirAnteproyectoSegunFlujo) {
+
+
+                                    <input #fileInputAnte type="file" hidden accept="application/pdf,.pdf"
+                                        (change)="onNativeAnteproyectoChange($event)" />
+
+                                    <div
+                                        class="w-full rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white dark:bg-slate-800 p-4">
+                                        <div class="flex flex-col xl:flex-row xl:items-center gap-3 w-full">
+                                            <button pButton type="button" icon="pi pi-upload" label="Seleccionar PDF"
+                                                class="p-button-sm shrink-0" (click)="fileInputAnte.click()">
+                                            </button>
+
+                                            <button pButton type="button" class="p-button-sm shrink-0"
+                                                icon="pi pi-cloud-upload" label="Subir anteproyecto"
+                                                [disabled]="loading || !selectedFile" (click)="subir()">
+                                            </button>
+
+                                            <span class="text-sm text-slate-500 dark:text-slate-300">
+                                                Un solo archivo PDF · Máx. 15 MB
+                                            </span>
+                                        </div>
+
+                                        <div *ngIf="selectedFile" class="mt-4">
+                                            <div
+                                                class="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-700 px-4 py-3">
+                                                <div class="min-w-0 flex items-center gap-3">
+                                                    <div
+                                                        class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-800 flex items-center justify-center shrink-0">
+                                                        <i
+                                                            class="pi pi-file-pdf text-emerald-600 dark:text-emerald-300"></i>
+                                                    </div>
+
+                                                    <div class="min-w-0">
+                                                        <div
+                                                            class="font-medium text-slate-800 dark:text-slate-100 truncate">
+                                                            {{ selectedFile.name }}
+                                                        </div>
+                                                        <div class="text-sm text-slate-500 dark:text-slate-300">
+                                                            {{ formatFileSizeMB(selectedFile.size) }}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <button type="button"
+                                                    class="w-9 h-9 rounded-full border border-red-200 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0"
+                                                    (click)="clearNativeAnteproyecto(fileInputAnte)"
+                                                    [disabled]="loading" title="Quitar archivo">
+                                                    <i class="pi pi-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div *ngIf="!loading && !selectedFile"
+                                            class="mt-3 text-sm text-slate-500 dark:text-slate-300">
+                                            Selecciona un PDF para habilitar la subida.
+                                        </div>
+
+                                        <div *ngIf="loading" class="mt-3 text-sm text-sky-600 dark:text-sky-300">
+                                            Subiendo archivo...
+                                        </div>
+                                    </div>
+
+                                    } @else {
+
+                                    <div class="mt-2 text-sm text-slate-500 dark:text-slate-300">
+                                        {{ mensajeBloqueoAnteproyecto }}
+                                    </div>
+
+                                    }
+
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ✅ Historial (tu bloque tal cual) -->
+                    <div
+                        class="mt-4 rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-4">
+                        <h3 class="text-lg font-semibold mb-3">Mis anteproyectos</h3>
+
+                        <p-table [value]="entregablesEtapa1" [responsiveLayout]="'scroll'" [loading]="loading">
+                            <ng-template pTemplate="header">
+                                <tr>
+                                    <th>Versión</th>
+                                    <th>Subido</th>
+                                    <th>Subido por</th>
+                                    <th>Estado</th>
+                                    <th>Última observación</th>
+                                    <th>Fecha última revisión</th>
+                                    <th>Acciones</th>
+
+                                </tr>
+                            </ng-template>
+
+                            <ng-template pTemplate="body" let-row let-rowIndex="rowIndex">
+                                <tr>
+                                    <td class="font-semibold">v{{ row.numeroVersion }}</td>
+
+                                    <td>{{ row.fechaSubida | fechaEs:true }}</td>
+
+
+                                    <td>{{ row.subidoPor || '—' }}</td>
+
+
+                                    <td>
+                                        <p-tag [severity]="row.estadoVisible === 'ACEPTADO' ? 'success'
+: (row.estadoVisible === 'RECHAZADO' ? 'danger'
+: (row.estadoVisible === 'REVISADO' ? 'warn' : 'info'))" [value]="row.estadoVisible || '—'">
+                                        </p-tag>
+                                    </td>
+
+                                    <td class="max-w-[320px]">
+                                        <span *ngIf="row.ultimaObs && row.ultimaObs.trim().length > 0; else sinObs"
+                                            class="whitespace-pre-wrap">
+                                            {{ row.ultimaObs }}
+                                        </span>
+                                        <ng-template #sinObs>—</ng-template>
+                                    </td>
+
+                                    <td>
+                                        <span *ngIf="row.fechaUltimaRevision">
+                                            {{ row.fechaUltimaRevision | fechaEs:true }}
+                                        </span>
+
+                                        <ng-template #sinFecha>—</ng-template>
+                                    </td>
+
+                                    <td class="flex gap-2 flex-wrap">
+                                        <button pButton icon="pi pi-file-pdf" class="p-button-sm"
+                                            (click)="verEntregable(row)">Ver archivo
+                                        </button>
+
+
+                                        <button pButton icon="pi pi-comment" class="p-button-sm p-button-outlined"
+                                            label="Ver observaciones" (click)="verObservaciones(row)">
+                                        </button>
+
+                                        <!-- ✅ Reemplazar: solo primera fila (última versión) y SIN revisor asignado -->
+                                        @if(!revisorAnteproyectoNombre) {
+
+                                        <input #fileInputReemplazo type="file" hidden accept="application/pdf,.pdf"
+                                            (change)="onNativeReemplazoChange($event, row)" />
+
+                                        <button pButton type="button" class="p-button-sm p-button-outlined"
+                                            icon="pi pi-refresh"
+                                            [label]="reemplazandoIdVersion === row.idVersion ? 'Reemplazando...' : 'Reemplazar'"
+                                            [disabled]="reemplazandoIdVersion === row.idVersion"
+                                            (click)="fileInputReemplazo.click()">
+                                        </button>
+
+                                        }
+
+
+                                    </td>
+                                </tr>
+                            </ng-template>
+
+                            <ng-template pTemplate="emptymessage">
+                                <tr>
+                                    <td colspan="7" class="text-center text-slate-500 py-6">
+                                        No hay versiones para esta etapa.
+                                    </td>
+                                </tr>
+                            </ng-template>
+                        </p-table>
+
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- Etapa 2 -->
+                <div *ngSwitchCase="1" class="w-full">
+
+                    <!-- 👥 Integrantes (solo si hay faltantes) -->
+                    <div *ngIf="integrantesFaltantes.length"
+                        class="rounded-lg border border-slate-200/60 dark:border-slate-700/60 p-3">
+                        <div class="font-semibold mb-2">👥 Integrantes</div>
+
+                        <ul class="list-disc pl-5 text-sm">
+                            <li *ngFor="let f of integrantesFaltantes">{{ f }}</li>
+                        </ul>
+                    </div>
+
+                    <!-- ✅ ETAPA 2: Pantalla de requisitos (SIN dialogs) -->
+                    <div *ngIf="activeStageIndex === 1 && debeExigirPerfilYProyectos && loadingGate"
+                        class="mt-4 rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-4">
+                        <div class="text-sm text-slate-500 dark:text-slate-300">⏳ Validando requisitos...</div>
+                    </div>
+
+                    <!-- ✅ ETAPA 2: Pantalla de requisitos (SIN dialogs) -->
+                    <div *ngIf="activeStageIndex === 1 && debeExigirPerfilYProyectos && entregablesLoaded && canEnterStage(1) && !loadingGate && !stage2Ready"
+                        class="mt-4 rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-4">
+
+                        <div class="flex items-start justify-between gap-3 flex-wrap">
+                            <div>
+                                <h3 class="text-xl font-semibold">⚠️ Completa tus datos para continuar</h3>
+                                <p class="text-sm text-slate-500 dark:text-slate-300 mt-1">
+                                    Te falta completar información antes de poder entrar a Reporte Parcial 1.
+                                </p>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <button pButton type="button" class="p-button-sm p-button-outlined" icon="pi pi-user"
+                                    label="Ir a Perfil" (click)="irPerfil()">
+                                </button>
+
+                                <button *ngIf="idProyecto" pButton type="button" class="p-button-sm p-button-outlined"
+                                    icon="pi pi-file-edit"
+                                    [label]="(proyectoCancelado || !canEditProyecto) ? 'Ver proyecto' : 'Editar proyecto'"
+                                    (click)="abrirDialogProyecto()">
+                                </button>
+
+                            </div>
+                        </div>
+
+                        <!-- PERFIL + CONTACTO + DOCS -->
+                        <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3">
+
+                            <div class="rounded-lg border border-slate-200/60 dark:border-slate-700/60 p-3">
+                                <div class="font-semibold mb-2">👤 Perfil / Contacto</div>
+
+                                <ul class="list-disc pl-5 text-sm" *ngIf="perfilFaltantes.length">
+                                    <li *ngFor="let f of perfilFaltantes">{{ f }}</li>
+                                </ul>
+
+                                <div *ngIf="!perfilFaltantes.length" class="text-sm text-green-600">
+                                    ✅ Todo completo
+                                </div>
+                            </div>
+
+                            <!-- PROYECTO (solo si propuesta alumno aplica) -->
+                            <div class="rounded-lg border border-slate-200/60 dark:border-slate-700/60 p-3">
+                                <div class="font-semibold mb-2">📌 Proyecto</div>
+
+                                <ul class="list-disc pl-5 text-sm" *ngIf="proyectoIncompleto">
+                                    <li *ngFor="let f of proyectoFaltantes">{{ f }}</li>
+                                </ul>
+
+                                <div *ngIf="!proyectoIncompleto" class="text-sm text-green-600">
+                                    ✅ Proyecto completo
+                                </div>
+
+                                <div class="mt-2 text-xs text-slate-500 dark:text-slate-300"
+                                    *ngIf="!canEditProyecto && proyectoIncompleto">
+                                    No puedes editar el proyecto (solo líder en propuesta alumno).
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+
+                    <div *ngIf="activeStageIndex === 1" class="bg-white dark:bg-slate-800">
+
+                        <!-- ⏳ Cargando estado anteproyecto/etapas -->
+                        <div *ngIf="!entregablesLoaded"
+                            class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-4 mb-4">
+                            <div class="text-sm text-slate-500 dark:text-slate-300">⏳ Cargando estado del
+                                anteproyecto...</div>
+                        </div>
+
+                        <!-- 🔒 Bloqueo por anteproyecto -->
+                        <div *ngIf="entregablesLoaded && !canEnterStage(1)"
+                            class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 p-5 shadow-sm">
+                            <div class="flex items-start gap-3">
+                                <div
+                                    class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
+                                    <i class="pi pi-lock"></i>
+                                </div>
+
+                                <div *ngIf="entregablesLoaded && !canEnterStage(1)"
+    class="mb-4 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 p-4">
+    <div class="font-semibold text-amber-800 dark:text-amber-200">
+        Etapa 2 bloqueada
+    </div>
+    <div class="text-sm text-amber-700 dark:text-amber-300 mt-1">
+        Debes tener el anteproyecto aprobado para continuar con el Reporte parcial 1.
+    </div>
+</div>
+                            </div>
+                        </div>
+
+                        <!-- ✅ UI REAL Etapa 2 -->
+                        <div *ngIf="entregablesLoaded && canEnterStage(1) && stage2Ready" class="mt-2">
+
+                            <div
+    class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-4">
+    <div class="flex items-start justify-between gap-3 flex-wrap">
+        <div class="space-y-2">
+            <div class="flex items-center gap-2 flex-wrap">
+                <span
+                    class="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                    Etapa 2
+                </span>
+
+                <span
+                    class="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                    Estado: {{ estadoEtapaLabel(2) }}
+                </span>
+            </div>
+
+            <div>
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Reporte parcial 1</h3>
+
+                <div class="mt-1 text-xs text-slate-500 dark:text-slate-300"
+                    *ngIf="fechaProgramadaRp1; else rp1SinFecha">
+                    Fecha sugerida:
+                    <span class="font-semibold">{{ fechaProgramadaRp1 | fechaEs:false }}</span>
+                    · 6 semanas después de que el anteproyecto fue aprobado.
+                </div>
+
+                <!-- Alerta de estado de fecha -->
+                <div class="mt-2"
+                  *ngIf="getFechaLimiteEtapa(2) && !isTipoCerrado(2)">
+
+                  <!-- Vencida -->
+                  <div *ngIf="esFechaVencidaEtapa(2)"
+                    class="flex items-center gap-2 rounded-lg border border-red-300 bg-red-50
+                           dark:border-red-700 dark:bg-red-900/20 px-3 py-2 text-xs text-red-700
+                           dark:text-red-300">
+                    <i class="pi pi-times-circle shrink-0"></i>
+                    <span><strong>Fecha límite vencida.</strong> {{ mensajeFechaEtapa(2) }}
+                      No es posible subir archivos. Contacta a tu coordinador.</span>
+                  </div>
+
+                  <!-- Próxima a vencer (≤7 días) -->
+                  <div *ngIf="!esFechaVencidaEtapa(2) && esFechaProximaEtapa(2)"
+                    class="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50
+                           dark:border-amber-700 dark:bg-amber-900/20 px-3 py-2 text-xs text-amber-700
+                           dark:text-amber-300">
+                    <i class="pi pi-exclamation-triangle shrink-0"></i>
+                    <span><strong>¡Próximo a vencer!</strong> {{ mensajeFechaEtapa(2) }}</span>
+                  </div>
+
+                  <!-- En tiempo (>7 días) -->
+                  <div *ngIf="!esFechaVencidaEtapa(2) && !esFechaProximaEtapa(2)"
+                    class="flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50
+                           dark:border-emerald-700 dark:bg-emerald-900/20 px-3 py-2 text-xs text-emerald-700
+                           dark:text-emerald-300">
+                    <i class="pi pi-calendar-check shrink-0"></i>
+                    <span>{{ mensajeFechaEtapa(2) }}</span>
+                  </div>
+                </div>
+                <ng-template #rp1SinFecha>
+                    <div class="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                        La fecha sugerida aparecerá cuando el anteproyecto sea aprobado.
+                    </div>
+                </ng-template>
+
+                <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                    Asesor interno:
+                    <span class="font-semibold">{{ asesorInternoNombre || 'Sin asignar' }}</span>
+                </div>
+
+                <div class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                    Revisores:
+                    <span class="font-semibold">
+                        {{
+                        (revisorResidenciaNombre || '') +
+                        ((revisorResidenciaNombre && revisorProyectoNombre) ? ', ' : '') +
+                        (revisorProyectoNombre || '') ||
+                        'Sin asignar'
+                        }}
+                    </span>
+                </div>
+
+                <div class="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                    Los archivos seleccionados se mostrarán abajo antes de enviarlos.
+                </div>
+            </div>
+        </div>
+
+        <!-- Selector + Subir (SIN disabled) -->
+        <div class="w-full rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white dark:bg-slate-800 p-4"
+            *ngIf="!esDocente && !isTipoCerrado(2)">
+                                        <input #fileInputEtapa2 type="file" hidden multiple
+                                            accept=".pdf,.doc,.docx,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                            (change)="onNativeFilesChangeEtapa($event)" />
+
+                                        <div
+                                            class="w-full rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white dark:bg-slate-800 p-4">
+                                            <div class="flex flex-col xl:flex-row xl:items-center gap-3 w-full">
+                                                <button pButton type="button" icon="pi pi-upload"
+                                                    label="Seleccionar archivos" class="p-button-sm shrink-0"
+                                                    (click)="fileInputEtapa2.click()">
+                                                </button>
+
+                                                <button pButton type="button" class="p-button-sm shrink-0"
+                                                    icon="pi pi-cloud-upload" label="Subir"
+                                                    [disabled]="loading || !selectedFilesEtapa.length"
+                                                    [disabled]="esFechaVencidaEtapa(2)" (click)="subirEtapaLote(2)">
+                                                </button>
+
+                                                <span class="text-sm text-slate-500 dark:text-slate-300">
+                                                    Puedes seleccionar varios archivos · Máx. 15 MB por archivo
+                                                </span>
+                                            </div>
+
+                                            <div *ngIf="selectedFilesEtapa.length" class="mt-4 space-y-2">
+                                                <div *ngFor="let f of selectedFilesEtapa; let i = index"
+                                                    class="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-700 px-4 py-3">
+                                                    <div class="min-w-0 flex items-center gap-3">
+                                                        <div
+                                                            class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-800 flex items-center justify-center shrink-0">
+                                                            <i
+                                                                class="pi pi-file text-emerald-600 dark:text-emerald-300"></i>
+                                                        </div>
+
+                                                        <div class="min-w-0">
+                                                            <div
+                                                                class="font-medium text-slate-800 dark:text-slate-100 truncate">
+                                                                {{ f.name }}
+                                                            </div>
+                                                            <div class="text-sm text-slate-500 dark:text-slate-300">
+                                                                {{ formatFileSizeMB(f.size) }}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <button type="button"
+                                                        class="w-9 h-9 rounded-full border border-red-200 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0"
+                                                        (click)="removeSelectedFileEtapa(i, fileInputEtapa2)"
+                                                        [disabled]="loading" title="Quitar archivo">
+                                                        <i class="pi pi-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div *ngIf="!loading && !selectedFilesEtapa.length"
+                                                class="mt-3 text-sm text-slate-500 dark:text-slate-300">
+                                                Selecciona archivos para habilitar la subida.
+                                            </div>
+
+                                            <div *ngIf="loading" class="mt-3 text-sm text-sky-600 dark:text-sky-300">
+                                                Subiendo archivos...
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div *ngIf="isTipoCerrado(2)" class="text-sm text-slate-500 dark:text-slate-300">
+                                        Este reporte ya fue dictaminado. Ya no puedes subir más archivos.
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <!-- Historial Etapa 2 -->
+                            <div
+                                class="mt-4 rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-4">
+                                <h3 class="text-lg font-semibold mb-3">Archivos subidos</h3>
+
+                                <p-table [value]="entregablesEtapa2" [responsiveLayout]="'scroll'" [loading]="loading">
+                                    <ng-template pTemplate="header">
+                                        <tr>
+
+                                            <th>Nombre</th>
+                                            <th>Subido</th>
+                                            <th>Subido por</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </ng-template>
+
+                                    <ng-template pTemplate="body" let-row>
+                                        <tr>
+
+
+                                            <td class="max-w-[360px] whitespace-nowrap overflow-hidden text-ellipsis">
+                                                {{ row.nombreOriginal || '—' }}
+                                            </td>
+
+                                            <td>{{ row.fechaSubida | fechaEs:true }}</td>
+
+                                            <td>{{ row.subidoPor || '—' }}</td>
+
+                                            <td>
+                                                <p-tag [severity]="row.estadoVisible === 'ACEPTADO' ? 'success'
+                                            : (row.estadoVisible === 'RECHAZADO' ? 'danger'
+                                            : (row.estadoVisible === 'REVISADO' ? 'warn' : 'info'))"
+                                                    [value]="row.estadoVisible || '—'">
+                                                </p-tag>
+                                            </td>
+
+                                            <td class="flex gap-2 flex-wrap">
+                                                <button pButton icon="pi pi-eye" class="p-button-sm p-button-outlined"
+                                                    label="Abrir" (click)="abrirArchivo(row)">
+                                                </button>
+                                                <button pButton icon="pi pi-comment"
+                                                    class="p-button-sm p-button-outlined" label="Observaciones"
+                                                    (click)="verObservaciones(row)">
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </ng-template>
+
+                                    <ng-template pTemplate="emptymessage">
+                                        <tr>
+                                            <td colspan="5" class="text-center text-slate-500 py-6">
+                                                Aún no hay archivos para esta etapa.
+                                            </td>
+                                        </tr>
+                                    </ng-template>
+                                </p-table>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- Etapa 3 -->
+                <div *ngSwitchCase="2" class="w-full">
+
+                    <div class="bg-white dark:bg-slate-800">
+
+                        <!-- ⏳ Cargando estado -->
+                        <div *ngIf="!entregablesLoaded"
+                            class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-4 mb-4">
+                            <div class="text-sm text-slate-500 dark:text-slate-300">⏳ Cargando estado del
+                                anteproyecto...</div>
+                        </div>
+
+                        <!-- 🔒 Bloqueo -->
+                        <div *ngIf="entregablesLoaded && !canEnterStage(2)"
+                            class="mb-4 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 p-4">
+                            <div class="font-semibold text-amber-800 dark:text-amber-200">
+                                Etapa bloqueada
+                            </div>
+                            <div class="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                                {{ lockedMessageForStage(2) }}
+                            </div>
+                        </div>
+
+                        <!-- ✅ UI REAL Etapa 3 -->
+                        <div *ngIf="entregablesLoaded && canEnterStage(2)" class="mt-2">
+
+                            <div
+    class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-4">
+    <div class="flex items-start justify-between gap-3 flex-wrap">
+        <div class="space-y-2">
+            <div class="flex items-center gap-2 flex-wrap">
+                <span
+                    class="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                    Etapa 3
+                </span>
+
+                <span
+                    class="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                    Estado: {{ estadoEtapaLabel(3) }}
+                </span>
+            </div>
+
+            <div>
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Reporte parcial 2</h3>
+
+                <div class="mt-1 text-xs text-slate-500 dark:text-slate-300"
+    *ngIf="fechaProgramadaRp2; else rp2SinFecha">
+    Fecha sugerida (12 semanas después de aprobar anteproyecto):
+    <span class="font-semibold">{{ fechaProgramadaRp2 | fechaEs:false }}</span>
+</div>
+<ng-template #rp2SinFecha>
+    <div class="mt-1 text-xs text-slate-500 dark:text-slate-300">
+        La fecha sugerida se calculará cuando el anteproyecto esté aprobado.
+
+                <!-- Alerta de estado de fecha -->
+                <div class="mt-2"
+                  *ngIf="getFechaLimiteEtapa(3) && !isTipoCerrado(3)">
+
+                  <!-- Vencida -->
+                  <div *ngIf="esFechaVencidaEtapa(3)"
+                    class="flex items-center gap-2 rounded-lg border border-red-300 bg-red-50
+                           dark:border-red-700 dark:bg-red-900/20 px-3 py-2 text-xs text-red-700
+                           dark:text-red-300">
+                    <i class="pi pi-times-circle shrink-0"></i>
+                    <span><strong>Fecha límite vencida.</strong> {{ mensajeFechaEtapa(3) }}
+                      No es posible subir archivos. Contacta a tu coordinador.</span>
+                  </div>
+
+                  <!-- Próxima a vencer (≤7 días) -->
+                  <div *ngIf="!esFechaVencidaEtapa(3) && esFechaProximaEtapa(3)"
+                    class="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50
+                           dark:border-amber-700 dark:bg-amber-900/20 px-3 py-2 text-xs text-amber-700
+                           dark:text-amber-300">
+                    <i class="pi pi-exclamation-triangle shrink-0"></i>
+                    <span><strong>¡Próximo a vencer!</strong> {{ mensajeFechaEtapa(3) }}</span>
+                  </div>
+
+                  <!-- En tiempo (>7 días) -->
+                  <div *ngIf="!esFechaVencidaEtapa(3) && !esFechaProximaEtapa(3)"
+                    class="flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50
+                           dark:border-emerald-700 dark:bg-emerald-900/20 px-3 py-2 text-xs text-emerald-700
+                           dark:text-emerald-300">
+                    <i class="pi pi-calendar-check shrink-0"></i>
+                    <span>{{ mensajeFechaEtapa(3) }}</span>
+                  </div>
+                </div>
+    </div>
+</ng-template>
+
+                <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                    Asesor interno:
+                    <span class="font-semibold">{{ asesorInternoNombre || 'Sin asignar' }}</span>
+                </div>
+
+                <div class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                    Revisores:
+                    <span class="font-semibold">
+                        {{
+                        (revisorResidenciaNombre || '') +
+                        ((revisorResidenciaNombre && revisorProyectoNombre) ? ', ' : '') +
+                        (revisorProyectoNombre || '') ||
+                        'Sin asignar'
+                        }}
+                    </span>
+                </div>
+
+                <div class="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                    Puedes subir múltiples archivos (PDF, Word o imágenes). Cada archivo queda como evidencia.
+                </div>
+            </div>
+        </div>
+
+        <!-- Selector + Subir (SIN disabled) -->
+        <div *ngIf="!esDocente && !isTipoCerrado(3)">
+                                        <input #fileInputEtapa3 type="file" hidden multiple
+                                            accept=".pdf,.doc,.docx,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                            (change)="onNativeFilesChangeEtapa($event)" />
+
+                                        <div
+                                            class="w-full rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white dark:bg-slate-800 p-4">
+                                            <div class="flex flex-col xl:flex-row xl:items-center gap-3 w-full">
+                                                <button pButton type="button" icon="pi pi-upload"
+                                                    label="Seleccionar archivos" class="p-button-sm shrink-0"
+                                                    (click)="fileInputEtapa3.click()">
+                                                </button>
+
+                                                <button pButton type="button" class="p-button-sm shrink-0"
+                                                    icon="pi pi-cloud-upload" label="Subir"
+                                                    [disabled]="loading || !selectedFilesEtapa.length"
+                                                    [disabled]="esFechaVencidaEtapa(3)" (click)="subirEtapaLote(3)">
+                                                </button>
+
+                                                <span class="text-sm text-slate-500 dark:text-slate-300">
+                                                    Puedes seleccionar varios archivos · Máx. 15 MB por archivo
+                                                </span>
+                                            </div>
+
+                                            <div *ngIf="selectedFilesEtapa.length" class="mt-4 space-y-2">
+                                                <div *ngFor="let f of selectedFilesEtapa; let i = index"
+                                                    class="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-700 px-4 py-3">
+                                                    <div class="min-w-0 flex items-center gap-3">
+                                                        <div
+                                                            class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-800 flex items-center justify-center shrink-0">
+                                                            <i
+                                                                class="pi pi-file text-emerald-600 dark:text-emerald-300"></i>
+                                                        </div>
+
+                                                        <div class="min-w-0">
+                                                            <div
+                                                                class="font-medium text-slate-800 dark:text-slate-100 truncate">
+                                                                {{ f.name }}
+                                                            </div>
+                                                            <div class="text-sm text-slate-500 dark:text-slate-300">
+                                                                {{ formatFileSizeMB(f.size) }}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <button type="button"
+                                                        class="w-9 h-9 rounded-full border border-red-200 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0"
+                                                        (click)="removeSelectedFileEtapa(i, fileInputEtapa3)"
+                                                        [disabled]="loading" title="Quitar archivo">
+                                                        <i class="pi pi-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div *ngIf="!loading && !selectedFilesEtapa.length"
+                                                class="mt-3 text-sm text-slate-500 dark:text-slate-300">
+                                                Selecciona archivos para habilitar la subida.
+                                            </div>
+
+                                            <div *ngIf="loading" class="mt-3 text-sm text-sky-600 dark:text-sky-300">
+                                                Subiendo archivos...
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div *ngIf="isTipoCerrado(3)" class="text-sm text-slate-500 dark:text-slate-300">
+                                        Este reporte ya fue dictaminado. Ya no puedes subir más archivos.
+                                    </div>
+
+                                </div>
+
+                                <!-- Lista rápida de seleccionados -->
+                                <div *ngIf="selectedFilesEtapa.length" class="mt-3 text-sm">
+                                    <div class="font-semibold mb-1">Archivos seleccionados:</div>
+                                    <ul class="list-disc pl-5 text-slate-600 dark:text-slate-300">
+                                        <li *ngFor="let f of selectedFilesEtapa">{{ f.name }}</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Historial Etapa 3 -->
+                            <div
+                                class="mt-4 rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-4">
+                                <h3 class="text-lg font-semibold mb-3">Archivos subidos</h3>
+
+                                <p-table [value]="entregablesEtapa3" [responsiveLayout]="'scroll'" [loading]="loading">
+                                    <ng-template pTemplate="header">
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Subido</th>
+                                            <th>Subido por</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </ng-template>
+
+                                    <ng-template pTemplate="body" let-row>
+                                        <tr>
+                                            <td class="max-w-[360px] whitespace-nowrap overflow-hidden text-ellipsis">
+                                                {{ row.nombreOriginal || '—' }}
+                                            </td>
+
+                                            <td>{{ row.fechaSubida | fechaEs:true }}</td>
+
+                                            <td>{{ row.subidoPor || '—' }}</td>
+
+                                            <td>
+                                                <p-tag [severity]="row.estadoVisible === 'ACEPTADO' ? 'success'
+                            : (row.estadoVisible === 'RECHAZADO' ? 'danger'
+                            : (row.estadoVisible === 'REVISADO' ? 'warn' : 'info'))"
+                                                    [value]="row.estadoVisible || '—'">
+                                                </p-tag>
+                                            </td>
+
+                                            <td class="flex gap-2 flex-wrap">
+                                                <button pButton icon="pi pi-eye" class="p-button-sm p-button-outlined"
+                                                    label="Abrir" (click)="abrirArchivo(row)">
+                                                </button>
+
+                                                <button pButton icon="pi pi-comment"
+                                                    class="p-button-sm p-button-outlined" label="Observaciones"
+                                                    (click)="verObservaciones(row)">
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </ng-template>
+
+                                    <ng-template pTemplate="emptymessage">
+                                        <tr>
+                                            <td colspan="5" class="text-center text-slate-500 py-6">
+                                                Aún no hay archivos para esta etapa.
+                                            </td>
+                                        </tr>
+                                    </ng-template>
+                                </p-table>
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Etapa 4 -->
+                <div *ngSwitchCase="3" class="w-full">
+
+                    <div class="bg-white dark:bg-slate-800">
+
+                        <!-- ⏳ Cargando estado -->
+                        <div *ngIf="!entregablesLoaded"
+                            class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-4 mb-4">
+                            <div class="text-sm text-slate-500 dark:text-slate-300">⏳ Cargando estado del
+                                anteproyecto...</div>
+                        </div>
+
+                        <!-- 🔒 Bloqueo -->
+                        <div *ngIf="entregablesLoaded && !canEnterStage(3)"
+                            class="mb-4 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 p-4">
+                            <div class="font-semibold text-amber-800 dark:text-amber-200">
+                                Etapa bloqueada
+                            </div>
+                            <div class="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                                {{ lockedMessageForStage(3) }}
+                            </div>
+                        </div>
+
+                        <!-- ✅ UI REAL Etapa 4 -->
+                        <div *ngIf="entregablesLoaded && canEnterStage(3)" class="mt-2">
+
+                            <div
+    class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-4">
+    <div class="flex items-start justify-between gap-3 flex-wrap">
+        <div class="space-y-2">
+            <div class="flex items-center gap-2 flex-wrap">
+                <span
+                    class="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                    Etapa 4
+                </span>
+
+                <span
+                    class="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                    Estado: {{ estadoEtapaLabel(4) }}
+                </span>
+            </div>
+
+            <div>
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Reporte final</h3>
+
+                <div class="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                    Fecha sugerida:
+                    <span class="font-semibold" *ngIf="fechaFinPeriodoAcademico; else sinFechaFinal">
+                        {{ fechaFinPeriodoAcademico | fechaEs:false }}
+                    </span>
+                    <ng-template #sinFechaFinal>
+                        <span class="font-semibold">fin del período académico</span>
+                    </ng-template>
+                </div>
+
+                <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                    Asesor interno:
+                    <span class="font-semibold">{{ asesorInternoNombre || 'Sin asignar' }}</span>
+                </div>
+
+                <div class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                    Revisores:
+                    <span class="font-semibold">
+                        {{
+                        (revisorResidenciaNombre || '') +
+                        ((revisorResidenciaNombre && revisorProyectoNombre) ? ', ' : '') +
+                        (revisorProyectoNombre || '') ||
+                        'Sin asignar'
+                        }}
+                    </span>
+                </div>
+
+                <div class="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                    El reporte final se entrega al final del período académico.
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- Selector + Subir (SIN disabled) -->
+        <div *ngIf="!esDocente && !isTipoCerrado(4)">
+
+                                    <!-- Selector + Subir (SIN disabled) -->
+                                    <div *ngIf="!esDocente && !isTipoCerrado(4)">
+                                        <input #fileInputEtapa4 type="file" hidden multiple
+                                            accept=".pdf,.doc,.docx,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                            (change)="onNativeFilesChangeEtapa($event)" />
+
+                                        <div
+                                            class="w-full rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white dark:bg-slate-800 p-4">
+                                            <div class="flex flex-col xl:flex-row xl:items-center gap-3 w-full">
+                                                <button pButton type="button" icon="pi pi-upload"
+                                                    label="Seleccionar archivos" class="p-button-sm shrink-0"
+                                                    (click)="fileInputEtapa4.click()">
+                                                </button>
+
+                                                <button pButton type="button" class="p-button-sm shrink-0"
+                                                    icon="pi pi-cloud-upload" label="Subir"
+                                                    [disabled]="loading || !selectedFilesEtapa.length"
+                                                    (click)="subirEtapaLote(4)">
+                                                </button>
+
+                                                <span class="text-sm text-slate-500 dark:text-slate-300">
+                                                    Puedes seleccionar varios archivos · Máx. 15 MB por archivo
+                                                </span>
+                                            </div>
+
+                                            <div *ngIf="selectedFilesEtapa.length" class="mt-4 space-y-2">
+                                                <div *ngFor="let f of selectedFilesEtapa; let i = index"
+                                                    class="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-700 px-4 py-3">
+                                                    <div class="min-w-0 flex items-center gap-3">
+                                                        <div
+                                                            class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-800 flex items-center justify-center shrink-0">
+                                                            <i
+                                                                class="pi pi-file text-emerald-600 dark:text-emerald-300"></i>
+                                                        </div>
+
+                                                        <div class="min-w-0">
+                                                            <div
+                                                                class="font-medium text-slate-800 dark:text-slate-100 truncate">
+                                                                {{ f.name }}
+                                                            </div>
+                                                            <div class="text-sm text-slate-500 dark:text-slate-300">
+                                                                {{ formatFileSizeMB(f.size) }}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <button type="button"
+                                                        class="w-9 h-9 rounded-full border border-red-200 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0"
+                                                        (click)="removeSelectedFileEtapa(i, fileInputEtapa4)"
+                                                        [disabled]="loading" title="Quitar archivo">
+                                                        <i class="pi pi-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div *ngIf="!loading && !selectedFilesEtapa.length"
+                                                class="mt-3 text-sm text-slate-500 dark:text-slate-300">
+                                                Selecciona archivos para habilitar la subida.
+                                            </div>
+
+                                            <div *ngIf="loading" class="mt-3 text-sm text-sky-600 dark:text-sky-300">
+                                                Subiendo archivos...
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div *ngIf="isTipoCerrado(4)" class="text-sm text-slate-500 dark:text-slate-300">
+                                        Este reporte ya fue dictaminado. Ya no puedes subir más archivos.
+                                    </div>
+
+                                </div>
+
+                                <!-- Lista rápida de seleccionados -->
+                                <div *ngIf="selectedFilesEtapa.length" class="mt-3 text-sm">
+                                    <div class="font-semibold mb-1">Archivos seleccionados:</div>
+                                    <ul class="list-disc pl-5 text-slate-600 dark:text-slate-300">
+                                        <li *ngFor="let f of selectedFilesEtapa">{{ f.name }}</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Historial Etapa 4 -->
+                            <div
+                                class="mt-4 rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-4">
+                                <h3 class="text-lg font-semibold mb-3">Archivos subidos</h3>
+
+                                <p-table [value]="entregablesEtapa4" [responsiveLayout]="'scroll'" [loading]="loading">
+                                    <ng-template pTemplate="header">
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Subido</th>
+                                            <th>Subido por</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </ng-template>
+
+                                    <ng-template pTemplate="body" let-row>
+                                        <tr>
+                                            <td class="max-w-[360px] whitespace-nowrap overflow-hidden text-ellipsis">
+                                                {{ row.nombreOriginal || '—' }}
+                                            </td>
+
+                                            <td>{{ row.fechaSubida | fechaEs:true }}</td>
+
+                                            <td>{{ row.subidoPor || '—' }}</td>
+
+                                            <td>
+                                                <p-tag [severity]="row.estadoVisible === 'ACEPTADO' ? 'success'
+                            : (row.estadoVisible === 'RECHAZADO' ? 'danger'
+                            : (row.estadoVisible === 'REVISADO' ? 'warn' : 'info'))"
+                                                    [value]="row.estadoVisible || '—'">
+                                                </p-tag>
+                                            </td>
+
+                                            <td class="flex gap-2 flex-wrap">
+                                                <button pButton icon="pi pi-eye" class="p-button-sm p-button-outlined"
+                                                    label="Abrir" (click)="abrirArchivo(row)">
+                                                </button>
+
+                                                <button pButton icon="pi pi-comment"
+                                                    class="p-button-sm p-button-outlined" label="Observaciones"
+                                                    (click)="verObservaciones(row)">
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </ng-template>
+
+                                    <ng-template pTemplate="emptymessage">
+                                        <tr>
+                                            <td colspan="5" class="text-center text-slate-500 py-6">
+                                                Aún no hay archivos para esta etapa.
+                                            </td>
+                                        </tr>
+                                    </ng-template>
+                                </p-table>
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Etapa 5 -->
+                <div *ngSwitchCase="4" class="w-full">
+
+                    <!-- Bloqueo -->
+                    <div *ngIf="!canEnterStage(4)"
+                        class="mb-4 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 p-4">
+                        <div class="font-semibold text-amber-800 dark:text-amber-200">
+                            Etapa bloqueada
+                        </div>
+                        <div class="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                            {{ lockedMessageForStage(4) }}
+                        </div>
+                    </div>
+
+                    <!-- Cargando validación -->
+                    <div *ngIf="canEnterStage(4) && loadingGate"
+                        class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-4">
+                        <div class="text-sm text-slate-500 dark:text-slate-300">
+                            ⏳ Validando documentos de cierre...
+                        </div>
+                    </div>
+
+                    <!-- UI etapa 5 -->
+                    <div *ngIf="canEnterStage(4) && !loadingGate"
+                        class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-4">
+
+                        <div class="flex items-start justify-between gap-3 flex-wrap">
+    <div class="space-y-2">
+        <div class="flex items-center gap-2 flex-wrap">
+            <span
+                class="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                Etapa 5
+            </span>
+
+            <span
+                class="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                Cierre documental
+            </span>
+        </div>
+
+        <div>
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Cierre documental</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-300 mt-1">
+                Esta etapa confirma si ya completaste el expediente final de residencia.
+            </p>
+        </div>
+    </div>
+
+    <div class="flex gap-2">
+        <button pButton type="button" class="p-button-sm p-button-outlined" icon="pi pi-user"
+            label="Ir a Perfil" (click)="irPerfil()">
+        </button>
+
+        <button pButton type="button" class="p-button-sm p-button-outlined" icon="pi pi-refresh"
+            label="Actualizar" (click)="validarCierreDocumentalSilencioso()">
+        </button>
+    </div>
+</div>
+
+                        <div class="mt-4 rounded-lg border border-slate-200/60 dark:border-slate-700/60 p-4">
+                            <div class="font-semibold mb-2">📄 Documentos pendientes</div>
+
+                            <div *ngIf="etapa5TieneFaltantes; else cierreCompleto">
+                                <p class="text-sm text-slate-500 dark:text-slate-300 mb-3">
+                                    Te faltan los siguientes documentos en tu expediente:
+                                </p>
+
+                                <ul class="list-disc pl-5 text-sm space-y-1">
+                                    <li *ngFor="let doc of etapa5DocumentosFaltantes">{{ doc }}</li>
+                                </ul>
+
+                                <div class="mt-4 text-sm text-amber-700 dark:text-amber-300">
+                                    Sube estos archivos desde tu perfil para completar el cierre de residencia.
+                                </div>
+                            </div>
+
+                            <ng-template #cierreCompleto>
+                                <div class="text-green-600 font-medium">
+                                    ✅ Ya no tienes documentos pendientes. Tu expediente está completo.
+                                </div>
+                            </ng-template>
+                        </div>
+                    </div>
+                </div>
+            </ng-container>
+        </div>
+    </div>
+
+
+
+
+
+
+    <!-- ✅ Dialog: Observaciones por versión -->
+    <p-dialog [(visible)]="showObsDialog" [modal]="true" [dismissableMask]="true" [draggable]="false"
+        [resizable]="false" [style]="{ width: '100%', 'max-width': '700px' }">
+        <ng-template pTemplate="header">
+            <div class="text-lg font-semibold">
+                Observaciones · {{ obsDoc?.nombreOriginal || 'Anteproyecto' }}
+            </div>
+        </ng-template>
+
+        <div *ngIf="obsLoading" class="text-sm text-slate-500">Cargando...</div>
+
+        <div *ngIf="!obsLoading && obsRevisiones.length === 0" class="text-sm text-slate-500">
+            Esta versión no tiene observaciones.
+        </div>
+
+        <div class="space-y-3" *ngIf="!obsLoading && obsRevisiones.length > 0">
+            <div class="rounded-lg border border-slate-200/60 dark:border-slate-700/60 p-3"
+                *ngFor="let r of obsRevisiones; let i = index">
+                <div class="text-xs text-slate-500 dark:text-slate-300 mt-1">
+                    {{ r.fecha | fechaEs:true }}
+                </div>
+                <div class="mt-2 text-sm whitespace-pre-wrap">
+                    {{ r.observacion }}
+                </div>
+                <div class="mt-3">
+                    <button *ngIf="r.tieneArchivo" pButton type="button"
+                        class="p-button-sm p-button-help p-button-outlined" icon="pi pi-file-pdf"
+                        label="Ver archivo respueta del docente" (click)="verArchivoRevision(r)">
+                    </button>
+
+                </div>
+
+            </div>
+        </div>
+    </p-dialog>
+
+    <p-dialog [(visible)]="showPerfilIncompletoDialog" [modal]="true" [dismissableMask]="true" [draggable]="false"
+        [resizable]="false" [style]="{ width: '100%', 'max-width': '650px' }">
+        <ng-template pTemplate="header">
+            <div class="text-lg font-semibold">Completa tu perfil para continuar</div>
+        </ng-template>
+
+        <div class="text-sm text-slate-600 dark:text-slate-300">
+            Para acceder a <b>Reporte parcial 1</b>, necesitas completar tu información de perfil.
+        </div>
+
+        <div class="mt-3">
+            <div class="text-sm font-semibold mb-2">Faltan estos datos:</div>
+            <ul class="list-disc pl-5 text-sm text-slate-600 dark:text-slate-300">
+                <li *ngFor="let f of perfilFaltantes">{{ f }}</li>
+            </ul>
+        </div>
+
+        <div class="mt-5 flex justify-end gap-2">
+            <button pButton type="button" class="p-button-text" label="Cancelar"
+                (click)="showPerfilIncompletoDialog=false"></button>
+
+            <button pButton type="button" label="Ir a mi perfil"
+                (click)="showPerfilIncompletoDialog=false; router.navigate(['/perfil'])">
+            </button>
+        </div>
+    </p-dialog>
+
+    <p-dialog [(visible)]="showProyectoDialog" [modal]="true" [dismissableMask]="true" [draggable]="false"
+        [resizable]="false" [style]="{ width: '100%', 'max-width': '900px' }" (onHide)="onProyectoDialogHide()">
+
+        <ng-template pTemplate="header">
+            <div class="text-lg font-semibold">
+                {{ (proyectoCancelado || !canEditProyecto) ? 'Ver proyecto' : (proyectoIncompleto ? 'Completar proyecto'
+                : 'Editar proyecto') }}
+            </div>
+
+        </ng-template>
+
+        <!-- Mensaje -->
+        <div class="mb-3 text-sm text-slate-600 dark:text-slate-200">
+            <ng-container *ngIf="(proyectoCancelado || !canEditProyecto); else msgEdit">
+                👁️ Modo vista: no puedes modificar este proyecto.
+                <span *ngIf="proyectoCancelado" class="font-semibold"> (Proyecto cancelado)</span>
+            </ng-container>
+
+            <ng-template #msgEdit>
+                Completa los campos obligatorios para poder continuar.
+            </ng-template>
+        </div>
+
+
+
+
+        <!-- Error -->
+        <div *ngIf="proyectoFormError" class="mb-3 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700">
+            {{ proyectoFormError }}
+        </div>
+
+        <!-- Error -->
+        <div *ngIf="proyectoFormError" class="mb-3 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700">
+            {{ proyectoFormError }}
+        </div>
+
+        <!-- ✅ NUEVO: Mensaje cuando está cancelado -->
+        <div *ngIf="proyectoCancelado"
+            class="mb-3 p-3 rounded-lg border border-yellow-200 bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:border-yellow-700 dark:text-yellow-300">
+            <div class="flex items-center gap-2">
+                <i class="pi pi-exclamation-triangle"></i>
+                <span class="font-semibold">Este proyecto está cancelado y no puede ser modificado.</span>
+            </div>
+        </div>
+
+        <form [formGroup]="proyectoForm" (ngSubmit)="guardarProyectoDesdeDialog()"
+            class="p-fluid grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Título -->
+            <div class="md:col-span-2 flex flex-col gap-1">
+                <div class="flex items-center justify-between">
+                    <label class="font-medium">Título <span class="text-red-600">*</span></label>
+                    <small class="text-slate-500">Máx 200 caracteres</small>
+                </div>
+
+                <input pInputText class="w-full" formControlName="titulo" maxlength="200"
+                    placeholder="Ej. Sistema de control de inventario" />
+
+
+                <small class="text-red-600"
+                    *ngIf="pf['titulo'].invalid && (pf['titulo'].dirty || pf['titulo'].touched)">
+                    El título es obligatorio.
+                </small>
+            </div>
+
+            <!-- Descripción -->
+            <div class="md:col-span-2 flex flex-col gap-1">
+                <div class="flex items-center justify-between">
+                    <label class="font-medium">Descripción <span class="text-red-600">*</span></label>
+                    <small class="text-slate-500">Máx 1200 caracteres</small>
+                </div>
+
+                <textarea pInputTextarea class="w-full" formControlName="descripcion" rows="4" maxlength="1200"
+                    placeholder="Describe el proyecto de forma clara..."
+                    class="w-full border border-slate-300 rounded-lg p-2 dark:border-slate-600 dark:bg-gray-800"></textarea>
+
+
+                <small class="text-red-600"
+                    *ngIf="pf['descripcion'].invalid && (pf['descripcion'].dirty || pf['descripcion'].touched)">
+                    La descripción es obligatoria.
+                </small>
+            </div>
+
+            <!-- Objetivo -->
+            <div class="md:col-span-2 flex flex-col gap-1">
+                <label class="font-medium">Objetivo <span class="text-red-600">*</span></label>
+
+                <textarea pInputTextarea class="w-full" formControlName="objetivo" rows="3" maxlength="800"
+                    placeholder="¿Qué objetivo persigue el proyecto?"
+                    class="w-full border border-slate-300 rounded-lg p-2 dark:border-slate-600 dark:bg-gray-800"></textarea>
+
+
+                <small class="text-red-600"
+                    *ngIf="pf['objetivo'].invalid && (pf['objetivo'].dirty || pf['objetivo'].touched)">
+                    El objetivo es obligatorio.
+                </small>
+            </div>
+
+
+
+            <!-- Especialización -->
+            <div class="flex flex-col gap-1">
+                <label class="font-medium">Especialización <span class="text-red-600">*</span></label>
+                <p-select formControlName="idEspecializcion" [options]="especializacionesOptions" optionLabel="label"
+                    optionValue="value" placeholder="Selecciona especialización"></p-select>
+                <small class="text-red-600"
+                    *ngIf="pf['idEspecializcion'].invalid && (pf['idEspecializcion'].dirty || pf['idEspecializcion'].touched)">
+                    La especialización es obligatoria.
+                </small>
+            </div>
+
+            <!-- Periodo (readonly) -->
+            <div class="flex flex-col gap-1">
+                <label class="font-medium">Periodo académico</label>
+                <input pInputText class="w-full opacity-90"
+                    [value]="periodoLabelActual || (proyectoActual?.idPeriodoAcademico ?? '—')" disabled />
+            </div>
+
+            <!-- Empresa (readonly) -->
+            <div class="flex flex-col gap-1">
+                <label class="font-medium">Empresa</label>
+                <input pInputText class="w-full opacity-90"
+                    [value]="empresaLabelActual || (proyectoActual?.idEmpresa ?? '—')" disabled />
+            </div>
+
+
+            <!-- Modalidad -->
+            <div class="flex flex-col gap-1">
+                <label class="font-medium">Modalidad <span class="text-red-600">*</span></label>
+
+                <p-select formControlName="idModalidad" [options]="modalidadesOptions" optionLabel="label"
+                    optionValue="value" placeholder="Selecciona modalidad"></p-select>
+                <small class="text-red-600"
+                    *ngIf="pf['idModalidad'].invalid && (pf['idModalidad'].dirty || pf['idModalidad'].touched)">
+                    La modalidad es obligatoria.
+                </small>
+            </div>
+            <!-- Horario -->
+            <div class="flex flex-col gap-1">
+                <label class="font-medium">Horario inicio</label>
+                <input type="time" pInputText class="w-full" formControlName="horarioInicio" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="font-medium">Horario fin</label>
+                <input type="time" pInputText class="w-full" formControlName="horarioFin" />
+
+                <small class="text-red-600"
+                    *ngIf="proyectoForm.errors?.['timeRange'] && (pf['horarioFin'].dirty || pf['horarioFin'].touched)">
+                    El fin debe ser mayor al inicio.
+                </small>
+            </div>
+
+            <!-- Footer -->
+            @if(canEditProyecto && !proyectoCancelado){
+            <div class="md:col-span-2 flex justify-end gap-2 pt-2">
+                <button pButton type="button" class="p-button-text" label="Cancelar"
+                    [disabled]="savingProyecto || !canEditProyecto" (click)="showProyectoDialog=false"></button>
+
+
+                <button pButton type="button" label="Guardar" (click)="onSubmitProyecto()"
+                    [disabled]="savingProyecto || !canEditProyecto">
+                </button>
+
+            </div>
+            }
+        </form>
+
+    </p-dialog>
+
+    <p-dialog header="Visualizando PDF" [(visible)]="displayDialog" [modal]="true" [closable]="true"
+        [style]="{ width: '80vw', height: '80vh' }" [draggable]="false" [resizable]="false" (onHide)="liberarPdfUrl()">
+        <ngx-extended-pdf-viewer *ngIf="pdfUrl" [src]="pdfUrl" height="100%" [showToolbar]="true"
+            [showSidebarButton]="false" [showFindButton]="false" [showOpenFileButton]="false" [showPrintButton]="false"
+            [showDownloadButton]="true" [showPresentationModeButton]="false" [showRotateButton]="false"
+            [showHandToolButton]="false" [showSpreadButton]="false" [showPropertiesButton]="false" [textLayer]="false"
+            [showSecondaryToolbarButton]="false" [showStampEditor]="false" [showDrawEditor]="false"
+            [showTextEditor]="false" [showHighlightEditor]="false">
+        </ngx-extended-pdf-viewer>
+
+        <div *ngIf="!pdfUrl" class="p-3 text-center text-gray-600">
+            Cargando documento...
+        </div>
+    </p-dialog>
+
+
+
+</div>

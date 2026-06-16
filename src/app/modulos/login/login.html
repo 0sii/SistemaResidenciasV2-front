@@ -1,0 +1,107 @@
+<section class="min-h-[calc(100vh-65px)] dark:bg-gray-800 bg-slate-50">
+  <div class="mx-auto max-w-4xl px-4 py-12">
+    <div class="rounded-2xl border border-slate-200 bg-white  shadow-sm">
+      <div class="grid grid-cols-1 md:grid-cols-2">
+        <!-- Columna izquierda: formulario -->
+        <div class="p-8 md:p-10">
+
+          @if (checkingSession()) {
+          <div class="flex flex-col items-center justify-center min-h-[320px]">
+            <svg class="h-10 w-10 animate-spin text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <circle cx="12" cy="12" r="10" opacity="0.25"></circle>
+              <path d="M22 12a10 10 0 0 1-10 10" stroke-linecap="round"></path>
+            </svg>
+            <p class="mt-3 text-sm text-slate-700">Cargando...</p>
+          </div>
+          } @else {
+          <!-- 👇 aquí va TODO tu contenido actual del login (h2 + form) -->
+
+
+          <h2 class="mb-6 text-center text-slate-700 font-medium">Iniciar Sesión</h2>
+
+          <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
+            <!-- Email -->
+            <div>
+              <label class="mb-1 block text-sm text-slate-700">Correo</label>
+              <input type="email" formControlName="email"
+                class="w-full rounded-lg border border-slate-300 bg-white text-black px-3 py-2 outline-none focus:ring-2 focus:ring-sky-500"
+                placeholder="tucorreo@ejemplo.com" />
+              @if (f['email'].touched && f['email'].invalid) {
+              <p class="mt-1 text-xs text-rose-600">Ingresa un correo válido.</p>
+              }
+            </div>
+
+            <!-- Password -->
+            <div>
+              <label class="mb-1 block text-sm text-slate-700">Contraseña</label>
+              <div class="relative">
+                <input [type]="showPassword() ? 'text' : 'password'" formControlName="password"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 pr-10 text-black outline-none focus:ring-2 focus:ring-sky-500"
+                  placeholder="Tu contraseña" />
+                <button type="button"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-slate-500 hover:text-slate-700"
+                  (click)="showPassword.set(!showPassword())" aria-label="Mostrar u ocultar contraseña">
+                  {{ showPassword() ? 'Ocultar' : 'Mostrar' }}
+                </button>
+              </div>
+              @if (f['password'].touched && f['password'].invalid) {
+              <p class="mt-1 text-xs text-rose-600">Mínimo 6 caracteres.</p>
+              }
+            </div>
+
+            <!-- Remember + acciones -->
+            <div class="flex items-center justify-between">
+              <a class="text-sm text-sky-700 hover:underline" [routerLink]="['/changePassword']">
+                ¿Olvidaste tu contraseña?
+              </a>
+
+            </div>
+
+            <!-- Error -->
+            @if (error()) {
+            <div class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              {{ error() }}
+            </div>
+            }
+
+            <!-- Botones -->
+            <div class="flex flex-wrap gap-3">
+              <button type="submit" [disabled]="loading() || form.invalid"
+                class="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60">
+                @if(loading()){
+                <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2">
+                  <circle cx="12" cy="12" r="10" opacity="0.25"></circle>
+                  <path d="M22 12a10 10 0 0 1-10 10" stroke-linecap="round"></path>
+                </svg>
+                }
+                Iniciar Sesión
+              </button>
+
+
+            </div>
+          </form>
+          }
+        </div>
+
+
+        <!-- Columna derecha: logos -->
+        <div class="flex items-center justify-center p-8 md:p-10 bg-slate-100 rounded-2xl border border-slate-200">
+          <div class="flex flex-col items-center gap-8 "><!-- Usando una etiqueta estándar HTML -->
+            <img src="assets/optmized/logo-tecnm-250.webp"
+              srcset="assets/optmized/logo-tecnm-250.webp 1x, assets/optmized/logo-tecnm-500.webp 2x" width="250"
+              style="height:auto" alt="Logo TecNM" />
+
+            <img src="assets/optmized/pleca-250.webp"
+              srcset="assets/optmized/pleca-250.webp 1x, assets/optmized/pleca-500.webp 2x" width="250"
+              style="height:auto" alt="Pleca Educación" />
+
+
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,486 @@
+<p-toast></p-toast>
+
+<!-- Contenedor principal de Docentes -->
+<div class="min-h-screen w-full flex flex-col sm:flex-row bg-white dark:bg-gray-800 text-black dark:text-white">
+
+  <!-- Contenedor del contenido -->
+  <div class="flex-1 flex flex-col p-4">
+
+    <!-- Título + botón Agregar -->
+    <div class="flex items-center justify-between px-6 pt-6 flex-wrap">
+      <h2 class="text-3xl sm:text-2xl font-bold">Docentes</h2>
+      <button class="bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 rounded-md shadow-md mt-2 sm:mt-0"
+        (click)="openAddDialog()">
+        Agregar Docente
+      </button>
+    </div>
+
+    <!-- CONCENTRADO SUPERIOR: Cargar Excel -->
+    <div class="p-6 bg-white dark:bg-gray-700 shadow-md rounded-md mb-6 mt-4">
+      <div class="flex flex-wrap items-center gap-3 justify-between">
+        <div class="flex items-center gap-3">
+          <p-fileUpload mode="basic" chooseLabel="Elegir Excel" chooseIcon="pi pi-upload" name="excel"
+            accept=".xlsx,.xls" maxFileSize="1000000" (onSelect)="onUpload($event)">
+          </p-fileUpload>
+          <button *ngIf="ExcelData.length > 0" (click)="onSubmitExcelDocentes()"
+            [disabled]="uploading || validandoExistencia"
+            class="bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2 px-4 rounded-md shadow-md">
+            {{ uploading ? 'Subiendo...' : (validandoExistencia ? 'Validando...' : 'Subir a la base') }}
+          </button>
+
+          <button *ngIf="ExcelData.length > 0" (click)="clearExcel()"
+            class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md shadow-md">
+            Limpiar Excel
+          </button>
+        </div>
+
+        <button type="button" (click)="downloadPlantilla()"
+          class="bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 rounded-md shadow-md">
+          Descargar plantilla
+        </button>
+      </div>
+
+      <!-- Barra de progreso -->
+      @if(uploading || progress > 0){
+
+      <div class="w-full bg-slate-100 h-3 rounded my-4">
+        <div class="h-3 bg-blue-500 rounded" [style.width.%]="progress"></div>
+      </div>
+      }
+    </div>
+
+    <!-- Vista previa del archivo Excel -->
+    @if(ExcelData.length > 0){
+
+
+    <div class="bg-white dark:bg-gray-700 p-6 rounded-lg shadow-md mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <h3 class="text-xl font-semibold">Vista previa ({{ ExcelData.length }})</h3>
+
+          @if(validandoExistencia){
+          <span class="text-sm text-blue-500 flex items-center gap-2">
+            <i class="pi pi-spin pi-spinner"></i>
+            {{ validandoMsg }}
+          </span>
+          }
+        </div>
+
+      </div>
+
+      <div class="overflow-x-auto overflow-y-auto ">
+        <p-table [value]="ExcelData">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>#</th>
+              <th>Nombre</th>
+              <th>Apellido Paterno</th>
+              <th>Apellido Materno</th>
+              <th>Correo Institucional</th>
+              <th>RFC</th>
+              <th>Teléfono</th>
+              <th>Nivel Académico</th>
+              <th>Jefe Dto.</th>
+              <th>Estado</th>
+            </tr>
+          </ng-template>
+
+
+          <ng-template pTemplate="body" let-r let-rowIndex="rowIndex">
+            <tr>
+              <td class="px-4 py-2 dark:bg-gray-700">{{ rowIndex + 1 }}</td>
+              <td class="px-4 py-2 dark:bg-gray-700">{{ r.Nombre }}</td>
+              <td class="px-4 py-2 dark:bg-gray-700">{{ r.ApellidoPaterno }}</td>
+              <td class="px-4 py-2 dark:bg-gray-700">{{ r.ApellidoMaterno }}</td>
+              <td class="px-4 py-2 dark:bg-gray-700">{{ r.CorreoInstitucional }}</td>
+              <td class="px-4 py-2 dark:bg-gray-700">{{ r.RFC }}</td>
+              <td class="px-4 py-2 dark:bg-gray-700">{{ r.Telefono }}</td>
+
+              <td class="px-4 py-2 dark:bg-gray-700 text-sm">
+                @if (r.NivelAcademico) {
+                  <span class="inline-block bg-indigo-50 text-indigo-700 border border-indigo-200
+                               rounded-full px-2 py-0.5 text-xs font-medium dark:bg-indigo-900/30
+                               dark:text-indigo-300 dark:border-indigo-700">
+                    {{ r.NivelAcademico }}
+                  </span>
+                } @else {
+                  <span class="text-slate-400 text-xs">—</span>
+                }
+              </td>
+
+              <td class="px-4 py-2 dark:bg-gray-700 text-center">
+                @if (r.EsJefeDepartamento) {
+                  <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border
+                               border-amber-200 rounded-full px-2 py-0.5 text-xs font-medium
+                               dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700">
+                    <i class="pi pi-check text-[10px]"></i> Sí
+                  </span>
+                } @else {
+                  <span class="text-slate-400 text-xs">No</span>
+                }
+              </td>
+
+              <td class="px-4 py-2 dark:bg-gray-700">
+                @if (r.subio === 'OK') {
+                <span class="text-green-500">
+                  Guardado
+                  <i class="pi pi-check" style="color: rgb(22, 140, 69)"></i>
+                </span>
+                }
+                @else if (r.subio === 'DUPLICADO') {
+                <span class="text-red-500">
+                  Ya registrado
+                  <i class="pi pi-times" style="color: rgb(161, 51, 51)"></i>
+                </span>
+                }
+                @else if (r.subio === 'FORMATO') {
+                <span class="text-red-500">
+                  Formato inválido
+                  <i class="pi pi-times" style="color: rgb(161, 51, 51)"></i>
+                </span>
+                }
+                @else if (r.subio === 'ERROR') {
+                <span class="text-red-500">
+                  Error al guardar
+                  <i class="pi pi-times" style="color: rgb(161, 51, 51)"></i>
+                </span>
+                }
+                @else if (validarRegistro(r)) {
+                <span class="text-green-500">
+                  Válido
+                  <i class="pi pi-check" style="color: rgb(22, 140, 69)"></i>
+                </span>
+                }
+                @else {
+                <span class="text-red-500">
+                  Formato inválido
+                  <i class="pi pi-times" style="color: rgb(161, 51, 51)"></i>
+                </span>
+                }
+              </td>
+            </tr>
+          </ng-template>
+
+        </p-table>
+      </div>
+    </div>
+    }
+    <!-- Tabla de Docentes -->
+    <div class="overflow-x-auto p-6 dark:bg-gray-700 shadow-md rounded-md mb-6">
+      <h2 class="text-xl font-semibold mb-4">Docentes</h2>
+
+      <p-table #dt [value]="docentes" [tableStyle]="{ 'min-width': '50rem' }" class="dark:bg-gray-800" dataKey="id"
+        [rowHover]="true" [rows]="10" [showCurrentPageReport]="true" [rowsPerPageOptions]="[10, 25, 50]"
+        [paginator]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}" [filterDelay]="0"
+        [globalFilterFields]="['nombre', 'rfc', 'correo', 'telefono']">
+
+        <ng-template #caption>
+          <div class="flex justify-between items-center gap-3 flex-wrap">
+            <div class="flex items-center gap-3">
+              <p-button [outlined]="true" icon="pi pi-filter-slash" label="Limpiar" (click)="clear(dt)" />
+              <input pInputText type="text" [(ngModel)]="searchValue" (input)="dt.filterGlobal(searchValue, 'contains')"
+                placeholder="Buscador" />
+            </div>
+
+
+          </div>
+        </ng-template>
+
+
+        <ng-template pTemplate="header">
+          <tr>
+            <th class="px-4 py-2 text-left">Nombre</th>
+            <th class="px-4 py-2 text-left">RFC</th>
+            <th class="px-4 py-2 text-left">Correo</th>
+            <th class="px-4 py-2 text-left">Teléfono</th>
+            <th class="px-4 py-2 text-left">Nivel Académico</th>
+            <th class="px-4 py-2 text-center">Jefe Dto.</th>
+            <th class="px-4 py-2 text-left">Acciones</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-d>
+          <tr>
+            <td class="px-4 py-2 dark:bg-gray-700">{{ fullName(d) }}</td>
+            <td class="px-4 py-2 dark:bg-gray-700">{{ d.rfc }}</td>
+            <td class="px-4 py-2 dark:bg-gray-700">{{ d.correo }}</td>
+            <td class="px-4 py-2 dark:bg-gray-700">{{ d.telefono }}</td>
+
+            <td class="px-4 py-2 dark:bg-gray-700">
+              @if (d.nivelAcademico) {
+                <span class="inline-block bg-indigo-50 text-indigo-700 border border-indigo-200
+                             rounded-full px-2 py-0.5 text-xs font-medium dark:bg-indigo-900/30
+                             dark:text-indigo-300 dark:border-indigo-700">
+                  {{ d.nivelAcademico }}
+                </span>
+              } @else {
+                <span class="text-slate-400 text-xs">—</span>
+              }
+            </td>
+
+            <td class="px-4 py-2 dark:bg-gray-700 text-center">
+              @if (d.esJefeDepartamento) {
+                <span title="Jefe de Departamento"
+                      class="inline-flex items-center justify-center w-7 h-7 rounded-full
+                             bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                  <i class="pi pi-star-fill text-xs"></i>
+                </span>
+              }
+            </td>
+
+            <td class="px-4 py-2 dark:bg-gray-700 flex gap-2">
+              <button class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md shadow-md"
+                (click)="openEditDialog(d)">
+                Editar
+              </button>
+
+
+
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- D I Á L O G O Agregar/Editar Docente -->
+    <p-dialog [(visible)]="showDialog" [modal]="true" [blockScroll]="true" [draggable]="false" [resizable]="false"
+      [dismissableMask]="true" [style]="{width: '90%', maxWidth: '95vw'}" (onHide)="onDialogHide()">
+
+      <ng-template pTemplate="header">
+        <div class="text-xl font-semibold">
+          {{ dialogMode === 'edit' ? 'Editar Docente' : 'Agregar Docente' }}
+        </div>
+      </ng-template>
+
+      <!-- Form dentro del diálogo -->
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="mt-2">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium">Nombre</label>
+            <input type="text" formControlName="nombre" (input)="sanitizeNombreInput('nombre')"
+              class="mt-1 p-2 w-full border rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+              required />
+            @if(f['nombre'].invalid && (f['nombre'].dirty || f['nombre'].touched)) {
+            <small class="text-red-500">
+              @if(f['nombre'].errors?.['required']) { El nombre es obligatorio. }
+              @else if(f['nombre'].errors?.['pattern']) { Solo se permiten letras y espacios. }
+            </small>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium">Apellido Paterno</label>
+            <input type="text" formControlName="apellidoPaterno" (input)="sanitizeNombreInput('apellidoPaterno')"
+              class="mt-1 p-2 w-full border rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+              required />
+            @if(f['apellidoPaterno'].invalid && (f['apellidoPaterno'].dirty || f['apellidoPaterno'].touched)) {
+            <small class="text-red-500">
+              @if(f['apellidoPaterno'].errors?.['required']) { El apellido paterno es obligatorio. }
+              @else if(f['apellidoPaterno'].errors?.['pattern']) { Solo se permiten letras y espacios. }
+            </small>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium">Apellido Materno</label>
+            <input type="text" formControlName="apellidoMaterno" (input)="sanitizeNombreInput('apellidoMaterno')"
+              class="mt-1 p-2 w-full border rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-white" />
+            @if(f['apellidoMaterno'].invalid && (f['apellidoMaterno'].dirty || f['apellidoMaterno'].touched)) {
+            <small class="text-red-500">
+              @if(f['apellidoMaterno'].errors?.['pattern']) { Solo se permiten letras y espacios. }
+            </small>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium">Correo Institucional</label>
+            <input type="email" formControlName="correoInstitucional"
+              class="mt-1 p-2 w-full border rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+              required />
+            @if(f['correoInstitucional'].invalid && (f['correoInstitucional'].dirty ||
+            f['correoInstitucional'].touched)) {
+            <small class="text-red-500">
+              @if(f['correoInstitucional'].errors?.['required']) { El correo es obligatorio. }
+              @else if(f['correoInstitucional'].errors?.['email']) { Formato de correo no válido. }
+            </small>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium">RFC</label>
+            <input type="text" formControlName="RFC" (input)="toUpper('RFC')"
+              class="mt-1 p-2 w-full border rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-white" />
+            @if(f['RFC'].invalid && (f['RFC'].dirty || f['RFC'].touched)) {
+            <small class="text-red-500">
+              Formato de RFC no válido. Ej: ABCD001122XXX
+            </small>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium">Teléfono</label>
+            <input type="tel" formControlName="Telefono" (input)="digitsOnly('Telefono', 10)"
+              class="mt-1 p-2 w-full border rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-white" />
+            @if(f['Telefono'].invalid && (f['Telefono'].dirty || f['Telefono'].touched)) {
+            <small class="text-red-500">
+              Debe contener exactamente 10 dígitos.
+            </small>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium">Nivel Académico</label>
+            <select formControlName="nivelAcademico"
+              class="mt-1 p-2 w-full border rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-white bg-white">
+              <option [ngValue]="null">— Selecciona —</option>
+              <option value="Licenciatura / Ingeniería">Licenciatura / Ingeniería</option>
+              <option value="Especialidad">Especialidad</option>
+              <option value="Maestría">Maestría</option>
+              <option value="Doctorado">Doctorado</option>
+              <option value="Postdoctorado">Postdoctorado</option>
+            </select>
+          </div>
+
+        </div>
+
+        <!-- ── Jefe de Departamento ─────────────────────────── -->
+        <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+          <label class="flex items-center gap-3 cursor-pointer select-none w-fit">
+            <input type="checkbox" formControlName="esJefeDepartamento"
+              class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500
+                     dark:border-gray-600 dark:bg-gray-800 dark:checked:bg-blue-600 cursor-pointer" />
+            <span class="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Jefe de Departamento
+            </span>
+            <span class="text-xs text-slate-400 font-normal">
+              (activa permisos adicionales de gestión)
+            </span>
+          </label>
+        </div>
+
+        <div class="flex justify-between mt-6">
+          <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md shadow-md">
+            {{ isEditing() ? 'Actualizar Docente' : 'Agregar Docente' }}
+          </button>
+
+          <button type="button" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md shadow-md"
+            (click)="cancelarEdicion(); showDialog=false;">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </p-dialog>
+
+    <p-dialog [(visible)]="showDetalleDialog" [modal]="true" [blockScroll]="true" [draggable]="false"
+      [resizable]="false" [dismissableMask]="true" [style]="{width: '95%', maxWidth: '1100px'}">
+
+      <ng-template pTemplate="header">
+        <div class="text-xl font-semibold">
+          Detalle del docente — {{ docenteSel ? fullName(docenteSel) : '' }}
+        </div>
+      </ng-template>
+
+      <div *ngIf="detalleLoading" class="p-4">
+        Cargando detalle...
+      </div>
+
+      <div *ngIf="!detalleLoading" class="p-4 space-y-6">
+
+        <!-- Bloque resumen -->
+        <div class="bg-slate-50 dark:bg-gray-800 p-4 rounded-md border dark:border-gray-700">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div><b>Correo:</b> {{ docenteSel?.correo }}</div>
+            <div><b>Tel:</b> {{ docenteSel?.telefono || '—' }}</div>
+          </div>
+        </div>
+
+        <!-- Asesor -->
+        <div>
+          <h3 class="text-lg font-semibold mb-2">Como Asesor</h3>
+          <p-table [value]="detalleAsesor" [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5,10,25]">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Proyecto</th>
+                <th>Empresa</th>
+                <th>Periodo</th>
+                <th>Estado</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-x>
+              <tr>
+                <td>{{ x.proyectoTitulo }}</td>
+                <td>{{ x.empresaNombre || '—' }}</td>
+                <td>{{ x.periodoNombre || x.idPeriodoAcademico || '—' }}</td>
+                <td>{{ x.estadoDescripcion || ('Estado #' + x.idEstado) }}</td>
+
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+
+        <!-- Revisor -->
+        <!-- Revisor -->
+        <div>
+          <h3 class="text-lg font-semibold mb-2">Como Revisor </h3>
+
+          <!-- Acciones oficio (formato foto) -->
+          <div class="flex flex-wrap items-center gap-3 mb-3">
+            <label class="font-semibold">Periodo:</label>
+
+            <select class="border rounded p-2 dark:bg-gray-800 dark:border-gray-600" [(ngModel)]="selectedPeriodoId"
+              [disabled]="detalleRevisor.length === 0">
+              <option [ngValue]="null">-- Selecciona --</option>
+
+              <!-- Opción simple: lista por filas (puede repetirse si hay varios proyectos del mismo periodo) -->
+              <option *ngFor="let p of periodosRevisorUnicos" [ngValue]="p.idPeriodoAcademico">
+                {{ p.periodoNombre }}
+              </option>
+
+            </select>
+
+            <button
+              class="bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-md shadow-md disabled:opacity-50"
+              [disabled]="!selectedPeriodoId || detalleRevisor.length === 0"
+              (click)="generarOficiosRevisoresFormatoFotoDesdeDetalle()">
+              Generar Oficio Revisor
+            </button>
+          </div>
+
+          <p-table [value]="detalleRevisor" [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5,10,25]">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Proyecto</th>
+                <th>Empresa</th>
+                <th>Periodo</th>
+                <th>Estado</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-x>
+              <tr>
+                <td>{{ x.proyectoTitulo }}</td>
+                <td>{{ x.empresaNombre || '—' }}</td>
+                <td>{{ x.periodoNombre || x.idPeriodoAcademico || '—' }}</td>
+                <td>{{ x.estadoDescripcion || ('Estado #' + x.idEstado) }}</td>
+
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+
+
+        <!-- Revisor Anteproyecto -->
+        <div>
+          <h3 class="text-lg font-semibold mb-2">Como Revisor de Anteproyecto </h3>
+          <p-table [value]="detalleRevisorAnte" [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5,10,25]">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Proyecto</th>
+                <th>Empresa</th>
+                <th>Periodo</th>
+                <th>Estado</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-x>
+              <tr>
+                <td>{{ x.proyectoTitulo }}</td>
+      

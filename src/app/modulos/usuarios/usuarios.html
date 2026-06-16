@@ -1,0 +1,444 @@
+<p-toast position="top-right"></p-toast>
+
+<!-- Contenedor principal de Usuarios -->
+<div
+  class="min-h-screen w-full flex flex-col lg:flex-row relative bg-slate-50 dark:bg-gray-800 text-slate-900 dark:text-slate-100">
+  <div class="flex-1 flex flex-col">
+
+    <div class="p-6 w-full ">
+      <p-tabs [(value)]="activeTab" [ngStyle]="{backgroundColor:'bg-gray-700'}">
+
+        <!-- HEADER DE TABS -->
+        <p-tablist>
+          <p-tab value="usuarios">Usuarios</p-tab>
+          <p-tab value="roles">Roles y permisos</p-tab>
+        </p-tablist>
+
+        <!-- CONTENIDO DE CADA TAB -->
+        <p-tabpanels class="dark:bg-gray-700">
+
+          <!-- ============ TAB USUARIOS ============ -->
+          <p-tabpanel value="usuarios" class="dark:bg-gray-700">
+
+            <div
+              class="overflow-x-auto bg-white dark:bg-slate-800 shadow-md rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+              <div class="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 pt-4 pb-2">
+                <h2 class="text-xl font-semibold w-full sm:w-auto text-slate-900 dark:text-slate-100">
+                  Usuarios
+                </h2>
+
+                <button
+                  class="bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 rounded-md shadow-md text-sm sm:text-base"
+                  (click)="openAddDialog()">
+                  Agregar Usuario
+                </button>
+              </div>
+
+              <p-table #dt [value]="usuarios" [tableStyle]="{ 'min-width': '60rem' }" class="dark:bg-slate-800"
+                dataKey="id" [rowHover]="true" [rows]="10" [showCurrentPageReport]="true"
+                [rowsPerPageOptions]="[10, 25, 50]" [paginator]="true"
+                currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}" [filterDelay]="0"
+                [globalFilterFields]="['nombre', 'apellidoPaterno', 'apellidoMaterno', 'correo']">
+
+                <ng-template #caption>
+                  <div class="flex flex-wrap items-center gap-3 justify-between w-full px-4 pb-2">
+                    <p-button [outlined]="true" icon="pi pi-filter-slash" label="Limpiar" (click)="clear(dt)"
+                      styleClass="w-full sm:w-auto" />
+                    <div class="w-full sm:w-64">
+                      <input pInputText type="text" [(ngModel)]="searchValue"
+                        (input)="dt.filterGlobal(searchValue, 'contains')" placeholder="Buscador" class="w-full" />
+                    </div>
+                  </div>
+                </ng-template>
+
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th class="px-4 py-2 text-left">
+                      Nombre
+                      <p-columnFilter type="text" field="nombre" display="menu"></p-columnFilter>
+                    </th>
+                    <th class="px-4 py-2 text-left">
+                      Apellido Paterno
+                      <p-columnFilter type="text" field="apellidoPaterno" display="menu"></p-columnFilter>
+                    </th>
+                    <th class="px-4 py-2 text-left">
+                      Apellido Materno
+                      <p-columnFilter type="text" field="apellidoMaterno" display="menu"></p-columnFilter>
+                    </th>
+                    <th class="px-4 py-2 text-left">
+                      Correo
+                      <p-columnFilter type="text" field="correo" display="menu"></p-columnFilter>
+                    </th>
+                    <th class="px-4 py-2 text-left">
+                      Roles
+                    </th>
+                    <th class="px-4 py-2 text-left">
+                      Activo
+                      <p-columnFilter type="boolean" field="activo" display="menu"></p-columnFilter>
+                    </th>
+                    <th class="px-4 py-2 text-left">
+                      Acciones
+                    </th>
+                  </tr>
+                </ng-template>
+
+                <ng-template pTemplate="body" let-row>
+                  <tr>
+                    <td class="px-4 py-2 bg-white dark:bg-slate-800">
+                      {{ row.nombre }}
+                    </td>
+                    <td class="px-4 py-2 bg-white dark:bg-slate-800">
+                      {{ row.apellidoPaterno }}
+                    </td>
+                    <td class="px-4 py-2 bg-white dark:bg-slate-800">
+                      {{ row.apellidoMaterno }}
+                    </td>
+                    <td class="px-4 py-2 bg-white dark:bg-slate-800">
+                      {{ row.correo }}
+                    </td>
+                    <td>
+                      @if(rolesLoading[row.id]) {
+                      <span class="text-slate-500">Cargando roles...</span>
+                      }
+                      @else if(rolesError[row.id]) {
+                      <span class="text-red-500">Error al cargar</span>
+                      }
+                      @else {
+                      @if((rolesPorUsuario[row.id] || []).length > 0) {
+                      <div class="flex flex-wrap gap-1">
+                        @for(r of rolesPorUsuario[row.id]; track r.id) {
+                        <span class="px-2 py-1 rounded bg-slate-200 dark:bg-slate-700 text-xs">
+                          {{ r.descripcion }}
+                        </span>
+                        }
+                      </div>
+                      }
+                      @else {
+                      <span class="text-slate-500">Sin roles</span>
+                      }
+                      }
+                    </td>
+
+                    <td class="px-4 py-2 bg-white dark:bg-slate-800">
+                      <span class="px-2 py-1 rounded text-xs"
+                        [ngClass]="row.activo ? 'bg-emerald-500 text-white' : 'bg-gray-400 text-gray-900'">
+                        {{ row.activo ? 'Sí' : 'No' }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-2 bg-white dark:bg-slate-800">
+                      <div class="flex flex-col sm:flex-row gap-2">
+                        <button
+                          class="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded-md shadow-md"
+                          (click)="openEditDialog(row)">
+                          Editar
+                        </button>
+                        <button
+                          class="w-full sm:w-auto bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md shadow-md"
+                          (click)="eliminarUsuario(row)">
+                          Eliminar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </ng-template>
+
+              </p-table>
+            </div>
+          </p-tabpanel>
+
+          <!-- ============ TAB ROLES ============ -->
+          <p-tabpanel value="roles" class="dark:bg-gray-700">
+            <div
+              class="overflow-x-auto bg-white dark:bg-slate-800 shadow-md rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+              <div class="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 pt-4 pb-2">
+                <h2 class="text-xl font-semibold w-full sm:w-auto">
+                  Roles y permisos
+                </h2>
+
+                <button
+                  class="bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 rounded-md shadow-md text-sm sm:text-base"
+                  (click)="openAddRolDialog()">
+                  Agregar rol
+                </button>
+              </div>
+
+              <p-table [value]="rolesCatalogo" dataKey="id" [rows]="10" [paginator]="true">
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th class="px-4 py-2 text-left">Rol</th>
+                    <th class="px-4 py-2 text-left">Activo</th>
+                    <th class="px-4 py-2 text-left">Acciones</th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-rol>
+                  <tr>
+                    <td class="px-4 py-2 bg-white dark:bg-slate-800">
+                      {{ rol.descripcion }}
+                    </td>
+                    <td class="px-4 py-2 bg-white dark:bg-slate-800">
+                      <span class="px-2 py-1 rounded text-xs"
+                        [ngClass]="rol.activo ? 'bg-emerald-500 text-white' : 'bg-gray-400 text-gray-900'">
+                        {{ rol.activo ? 'Sí' : 'No' }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-2 bg-white dark:bg-slate-800">
+                      <div class="flex flex-col sm:flex-row gap-2">
+                        <button
+                          class="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded-md shadow-md"
+                          (click)="openEditRolDialog(rol)">
+                          Editar
+                        </button>
+                        <button
+                          class="w-full sm:w-auto bg-indigo-500 hover:bg-indigo-600 text-white py-1 px-3 rounded-md shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                          (click)="openPermisosRolDialog(rol)" [disabled]="!rol.activo">
+                          Permisos
+                        </button>
+
+                        <button
+                          class="w-full sm:w-auto bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                          (click)="eliminarRol(rol)" [disabled]="!rol.activo">
+                          Deshabilitar
+                        </button>
+
+                      </div>
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            </div>
+          </p-tabpanel>
+
+        </p-tabpanels>
+      </p-tabs>
+    </div>
+
+    <!-- D I Á L O G O  Agregar/Editar Usuario -->
+    <p-dialog [(visible)]="showDialog" [modal]="true" [blockScroll]="true" [draggable]="false" [resizable]="false"
+      [dismissableMask]="true" [style]="{ 'width': '100%', 'max-width': '95vw' }" (onHide)="onDialogHide()">
+
+      <ng-template pTemplate="header">
+        <div class="text-xl font-semibold">
+          {{ isEditing() ? 'Editar Usuario' : 'Agregar Usuario' }}
+        </div>
+      </ng-template>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="mt-2">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre</label>
+            <input type="text" formControlName="nombre"
+              class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+            @if(f['nombre'].invalid && (f['nombre'].dirty || f['nombre'].touched)) {
+            <small class="text-red-500">El nombre es obligatorio.</small>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Apellido Paterno</label>
+            <input type="text" formControlName="apellidoPaterno"
+              class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+            @if(f['apellidoPaterno'].invalid && (f['apellidoPaterno'].dirty || f['apellidoPaterno'].touched)) {
+            <small class="text-red-500">El apellido paterno es obligatorio.</small>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Apellido Materno</label>
+            <input type="text" formControlName="apellidoMaterno"
+              class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Correo</label>
+            <input type="email" formControlName="correo"
+              class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+            @if(f['correo'].invalid && (f['correo'].dirty || f['correo'].touched)) {
+            <small class="text-red-500">El correo es obligatorio y debe ser válido.</small>
+            }
+          </div>
+
+          <div class="flex items-center mt-2">
+            <label class="inline-flex items-center">
+              <input type="checkbox" formControlName="activo" class="form-checkbox" />
+              <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Usuario activo</span>
+            </label>
+          </div>
+
+          <!-- ✅ No. Control (solo si se selecciona Estudiante) -->
+          @if (mostrarNoControl) {
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              No. de Control (obligatorio para Estudiante)
+            </label>
+
+            <input type="text" formControlName="noControl" [readonly]="noControlReadonly"
+              class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+
+            @if(noControlCargando) {
+            <small class="text-slate-500">Cargando No. de control...</small>
+            }
+
+            @if(noControlReadonly) {
+            <small class="text-emerald-500">
+              Este usuario ya tenía registro de Estudiante. No necesitas capturarlo de nuevo.
+            </small>
+            }
+
+            @if(f['noControl'].invalid && (f['noControl'].dirty || f['noControl'].touched)) {
+
+            @if(f['noControl'].errors?.['required']) {
+            <small class="text-red-500">El No. de Control es obligatorio para rol Estudiante.</small>
+            }
+
+            @if(f['noControl'].errors?.['pattern']) {
+            <small class="text-red-500">
+              Formato inválido: debe ser 8 números o 1 letra + 8 números (ej. 20231234 o A20231234).
+            </small>
+            }
+
+            @if(f['noControl'].errors?.['noControlExiste']) {
+            <small class="text-red-500">Ese No. de Control ya existe en la base.</small>
+            }
+
+            }
+          </div>
+          }
+
+
+
+          <!-- Selector de roles con LISTBOX -->
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Roles del usuario
+            </label>
+            <p-listbox formControlName="rolesIds" [options]="rolesCatalogo" optionLabel="descripcion" optionValue="id"
+              [multiple]="true" [checkbox]="true" [filter]="true" styleClass="w-full"
+              [listStyle]="{ 'max-height': '200px' }" (onChange)="onRolesChange()">
+            </p-listbox>
+            @if(f['rolesIds'].invalid && (f['rolesIds'].dirty || f['rolesIds'].touched)) {
+            <small class="text-red-500">Selecciona al menos un rol.</small>
+            }
+          </div>
+
+          <!-- Permisos resultantes -->
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Permisos resultantes
+            </label>
+            <div class="flex flex-wrap gap-2 mt-1">
+              <span *ngFor="let p of permisosCalculados"
+                class="px-2 py-1 text-xs rounded bg-slate-200 dark:bg-gray-800">
+                {{ p.descripcion }}
+              </span>
+              <span *ngIf="permisosCalculados.length === 0" class="text-xs text-gray-500">
+                Sin permisos (selecciona al menos un rol).
+              </span>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="flex flex-col sm:flex-row justify-between gap-3 mt-6">
+          <button type="submit"
+            class="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md shadow-md">
+            {{ isEditing() ? 'Actualizar Usuario' : 'Agregar Usuario' }}
+          </button>
+
+          <button type="button"
+            class="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md shadow-md"
+            (click)="cancelarEdicion(); showDialog=false;">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </p-dialog>
+
+    <!-- D I Á L O G O  Permisos de Rol -->
+    <p-dialog [(visible)]="showPermisosRolDialog" [modal]="true" [blockScroll]="true" [draggable]="false"
+      [resizable]="false" [dismissableMask]="true" [style]="{ 'width': '100%', 'max-width': '95vw' }">
+
+      <ng-template pTemplate="header">
+        <div class="text-xl font-semibold">
+          Permisos del rol: {{ rolSeleccionado.descripcion }}
+        </div>
+      </ng-template>
+
+      <form [formGroup]="formPermisosRol" (ngSubmit)="onSubmitPermisosRol()">
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Permisos asignados
+          </label>
+
+          <p-listbox formControlName="permisosIds" [options]="permisosCatalogo" optionLabel="descripcion"
+            optionValue="id" [multiple]="true" [checkbox]="true" [filter]="true" styleClass="w-full"
+            [listStyle]="{ 'max-height': '250px' }">
+          </p-listbox>
+        </div>
+
+        <div class="flex flex-col sm:flex-row justify-between gap-3 mt-4">
+          <button type="button"
+            class="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md shadow-md"
+            (click)="showPermisosRolDialog=false">
+            Cancelar
+          </button>
+
+          <button type="submit"
+            class="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md shadow-md">
+            Guardar permisos
+          </button>
+        </div>
+      </form>
+    </p-dialog>
+
+    <!-- D I Á L O G O  Crear/Editar Rol -->
+    <p-dialog [(visible)]="showRolDialog" [modal]="true" [blockScroll]="true" [draggable]="false" [resizable]="false"
+      [dismissableMask]="true" [style]="{ 'width': '100%', 'max-width': '450px' }">
+
+      <ng-template pTemplate="header">
+        <div class="text-xl font-semibold">
+          {{ rolDialogMode === 'edit' ? 'Editar rol' : 'Agregar rol' }}
+        </div>
+      </ng-template>
+
+      <form [formGroup]="formRol" (ngSubmit)="onSubmitRol()">
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Nombre del rol
+            </label>
+            <input type="text" formControlName="descripcion"
+              class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+            <small
+              *ngIf="formRol.get('descripcion')?.invalid && (formRol.get('descripcion')?.touched || formRol.get('descripcion')?.dirty)"
+              class="text-red-500">
+              La descripción es obligatoria.
+            </small>
+          </div>
+
+          <div class="flex items-center">
+            <label class="inline-flex items-center">
+              <input type="checkbox" formControlName="activo" class="form-checkbox" />
+              <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Rol activo</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row justify-between gap-3 mt-6">
+          <button type="button"
+            class="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md shadow-md"
+            (click)="showRolDialog=false">
+            Cancelar
+          </button>
+
+          <button type="submit"
+            class="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md shadow-md"
+            [disabled]="formRol.invalid">
+            {{ rolDialogMode === 'edit' ? 'Guardar cambios' : 'Crear rol' }}
+          </button>
+        </div>
+      </form>
+    </p-dialog>
+
+  </div>
+</div>

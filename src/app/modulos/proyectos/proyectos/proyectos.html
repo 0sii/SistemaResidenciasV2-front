@@ -1,0 +1,1726 @@
+<p-toast position="top-right"></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+
+<div
+  class="min-h-screen w-full flex flex-col bg-transparent text-slate-900 transition-colors duration-200 dark:bg-gray-800 dark:text-white">
+  <div class="flex-1 flex flex-col p-4 sm:p-5">
+
+    <!-- Título + botón Agregar -->
+    <div class="flex items-center justify-between gap-3 px-2 sm:px-4 pt-2 sm:pt-4 flex-wrap">
+      <div>
+        <h2 class="text-3xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Proyectos</h2>
+        <p class="mt-1 text-sm text-slate-500 dark:text-gray-300">Administra proyectos, filtros, estados e integrantes.
+        </p>
+      </div>
+
+      <button class="bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 rounded-md shadow-md mt-2 sm:mt-0"
+        (click)="openAddDialog()">
+        Agregar Proyecto
+      </button>
+    </div>
+
+    <!-- Tabla de Proyectos -->
+    <div
+      class="mt-4 mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-700">
+      <div class="border-b border-slate-200 px-6 py-5 dark:border-gray-600">
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-white">Proyectos</h2>
+        <p class="mt-1 text-sm text-slate-500 dark:text-gray-300">Consulta, filtra y gestiona los proyectos registrados.
+        </p>
+      </div>
+
+      <p-table #dt [value]="proyectos" [tableStyle]="{ 'min-width': '50rem' }" class="dark:bg-gray-700" dataKey="id"
+        [rowHover]="true" [rows]="10" [showCurrentPageReport]="true" [rowsPerPageOptions]="[10, 25, 50]"
+        [paginator]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}" [filterDelay]="0"
+        [globalFilterFields]="['empresa', 'titulo', 'descripcion']">
+
+        <ng-template #caption>
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+
+            <!-- FILTROS -->
+            <div class="flex flex-wrap gap-3 items-center">
+
+              <!-- Filtro por período -->
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-medium text-slate-700 dark:text-gray-200">Período:</span>
+
+                <p-select [options]="periodos" optionLabel="nombre" optionValue="id" placeholder="Todos" class="w-56"
+                  [(ngModel)]="periodoSeleccionado" (onChange)="filtrarPorPeriodo(dt)">
+                </p-select>
+
+
+              </div>
+
+              <!-- Filtro por estado -->
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-medium">Estado:</span>
+
+                <p-select [options]="estados" optionLabel="descripcion" optionValue="id" placeholder="Todos"
+                  class="w-56" [(ngModel)]="estadoSeleccionado" (onChange)="filtrarPorEstado(dt)">
+                </p-select>
+
+
+               
+              </div>
+            </div>
+
+            <!-- BUSCADOR -->
+            <div class="flex gap-2 flex-wrap sm:flex-nowrap">
+              <p-button [outlined]="true" icon="pi pi-filter-slash" label="Limpiar" (click)="clear(dt)" />
+
+              <input pInputText type="text" [(ngModel)]="searchValue" (input)="dt.filterGlobal(searchValue, 'contains')"
+                placeholder="Buscar"
+                class="w-full sm:w-auto rounded-md border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-400" />
+            </div>
+
+            <div>
+               <p-button (onClick)="openGeneracionMasivaDialog()">Generacion masiva</p-button>
+
+            </div>
+
+
+          </div>
+        </ng-template>
+
+
+
+        <ng-template pTemplate="header">
+          <tr>
+            <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700 dark:text-gray-200">
+              Empresa
+            </th>
+            <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700 dark:text-gray-200">
+              Título
+            </th>
+            <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700 dark:text-gray-200">
+              Descripción
+            </th>
+            <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700 dark:text-gray-200">
+              Modalidad
+            </th>
+            <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700 dark:text-gray-200">
+              Estado
+            </th>
+            <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700 dark:text-gray-200">Período</th>
+
+            <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700 dark:text-gray-200">Acciones</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-row>
+          <tr>
+            <td class="px-4 py-3 align-top text-sm text-slate-700 border-t border-slate-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+  {{ getEmpresaNombre(row.idEmpresa) }}
+</td>
+<td class="px-4 py-3 align-top text-sm text-slate-700 border-t border-slate-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+  {{ row.titulo }}
+</td>
+<td class="px-4 py-3 align-top text-sm text-slate-700 border-t border-slate-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+  {{ row.descripcion }}
+</td>
+<td class="px-4 py-3 align-top text-sm text-slate-700 border-t border-slate-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+  {{ getModalidadDescripcion(row.idModalidad) }}
+</td>
+<td class="px-4 py-3 align-top text-sm text-slate-700 border-t border-slate-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+  <span
+    class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border cursor-default transition-colors"
+    [ngClass]="{
+      'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-800': row.idEstado === 3 || row.idEstado === 4,
+      'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-500/15 dark:text-gray-200 dark:border-gray-600': row.idEstado === 1,
+      'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-800': row.idEstado === 2,
+      'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-800': row.idEstado === 5,
+      'bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-500/15 dark:text-cyan-300 dark:border-cyan-800': row.idEstado === 6,
+      'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/15 dark:text-green-300 dark:border-green-800': row.idEstado === 7,
+      'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-800': row.idEstado === 8,
+      'bg-red-100 text-red-700 border-red-200 dark:bg-red-500/15 dark:text-red-300 dark:border-red-800': row.idEstado === 9
+    }"
+    [pTooltip]="getEstadoProyectoUI(row.idEstado)?.label || ''"
+    tooltipPosition="top"
+  >
+    {{ getEstadoProyectoUI(row.idEstado)?.shortLabel || ('Estado #' + row.idEstado) }}
+  </span>
+</td>
+<td class="px-4 py-3 align-top text-sm text-slate-700 border-t border-slate-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+  {{ getPeriodoNombre(row.idPeriodoAcademico) }}
+</td>
+
+<td class="px-4 py-3 align-top text-sm text-slate-700 border-t border-slate-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+              <div class="flex gap-2 flex-wrap items-center">
+
+                <!-- Detalles -->
+                <button type="button" class="bg-sky-500 hover:bg-sky-600 text-white p-2 rounded-full shadow-md"
+                  pTooltip="Ver detalles" tooltipPosition="top" (click)="openDetallesDialog(row)">
+
+                  <!-- Eye Icon -->
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 
+             8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 
+             7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
+
+
+                @if (row.idEstado !== 8 && row.idEstado !== 9) {
+                <!-- Gestionar integrantes (SIEMPRE visible) -->
+                <button type="button"
+                  class="bg-amber-500 hover:bg-amber-600 text-white p-2 rounded-full shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+                  pTooltip="Gestionar integrantes" tooltipPosition="top" (click)="openGestionEquipo(row)"
+                  [disabled]="!puedeEditarProyecto(row)">
+
+                  <!-- Users Icon -->
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5V18a4 4 0 00-4-4h-1" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 20H4v-2a4 4 0 014-4h1" />
+                    <circle cx="9" cy="7" r="4" />
+                    <circle cx="17" cy="7" r="4" />
+                  </svg>
+                </button>
+                }
+
+
+                <!-- Editar -->
+                <button type="button" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full shadow-md"
+                  pTooltip="Editar proyecto" tooltipPosition="top" (click)="openEditDialog(row)">
+
+                  <!-- Pencil Icon -->
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M11 5h2m-1-1v2m-6 6l-2 6 6-2 9-9a2 2 0 00-2-2l-9 9z" />
+                  </svg>
+                </button>
+
+
+                <!-- Asignar revisor -->
+                @if(row.idEstado === 3 ){
+                <button type="button" class="bg-violet-500 hover:bg-violet-600 text-white p-2 rounded-full shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+                  *ngIf="row.idEstado === 3 || row.idEstado === 4"  
+                [pTooltip]="getTooltipAsignarRevisor(row)" tooltipPosition="top"
+                  (click)="openAsignarRevisor(row)"
+                  [disabled]="!tieneAnteproyectoSubido(row)">
+
+                  <!-- User Edit Icon -->
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="7" r="4" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5.5 21a6.5 6.5 0 0113 0" />
+                  </svg>
+                </button>
+                }
+
+
+                <!-- Asignar asesor y revisores -->
+                @if(row.idEstado === 6 ){
+                <button type="button" class="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-full shadow-md"
+                  pTooltip="Asignar / cambiar asesor interno y revisores" tooltipPosition="top"
+                  (click)="openAsignarAsesorYRevisores(row)">
+
+                  <!-- User Plus Icon -->
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="7" r="4" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5.5 21a6.5 6.5 0 0113 0" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 8v6m3-3h-6" />
+                  </svg>
+                </button>
+                }
+
+              </div>
+            </td>
+
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- D I Á L O G O Agregar/Editar Proyecto -->
+    <p-dialog [(visible)]="showDialog" [modal]="true" [blockScroll]="true" [draggable]="false" [resizable]="false"
+      [dismissableMask]="true" [style]="{ width: '90%', maxWidth: '95vw' }" (onHide)="onDialogHide()">
+
+      <ng-template pTemplate="header">
+        <div class="text-xl font-semibold">
+          {{ dialogMode === 'edit' ? 'Editar Proyecto' : 'Agregar Proyecto' }}
+        </div>
+      </ng-template>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="mt-2">
+
+        <!-- ✅ BONUS (inciso 5): resumen arriba si intenta guardar y está inválido -->
+        @if (submitted && form.invalid) {
+        <div
+          class="sm:col-span-2 mb-4 rounded-md border border-rose-300 bg-rose-50 p-3 text-rose-800 dark:bg-rose-900/20 dark:text-rose-200 dark:border-rose-700">
+          <div class="font-semibold mb-1">⚠️ Te faltan datos obligatorios</div>
+          <div class="text-sm">
+            Revisa los campos marcados en rojo.
+          </div>
+        </div>
+        }
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          <!-- EMPRESA -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Empresa <span class="text-rose-500">*</span>
+            </label>
+
+            <p-select formControlName="idEmpresa" [options]="empresas" optionLabel="nombre" optionValue="id"
+              placeholder="Seleccione una empresa" class="mt-1 w-full" appendTo="body"
+              [invalid]="f['idEmpresa'].invalid && (f['idEmpresa'].touched || submitted)">
+            </p-select>
+
+            @if (f['idEmpresa'].invalid && (f['idEmpresa'].touched || submitted)) {
+            <small class="text-red-500">La empresa es obligatoria.</small>
+            }
+          </div>
+
+          <!-- TÍTULO -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Título <span class="text-rose-500">*</span>
+            </label>
+
+            <input type="text" formControlName="titulo"
+              [class.border-red-500]="f['titulo'].invalid && (f['titulo'].touched || submitted)"
+              class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+
+            @if (f['titulo'].invalid && (f['titulo'].touched || submitted)) {
+            <small class="text-red-500">El título es obligatorio.</small>
+            }
+          </div>
+
+          <!-- DESCRIPCIÓN -->
+          <div class="sm:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Descripción
+              @if (dialogMode !== 'edit') { <span class="text-rose-500">*</span> }
+            </label>
+
+            <input type="text" formControlName="descripcion"
+              [class.border-red-500]="(dialogMode !== 'edit') && f['descripcion'].invalid && (f['descripcion'].touched || submitted)"
+              class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+
+            @if ((dialogMode !== 'edit') && f['descripcion'].invalid && (f['descripcion'].touched || submitted)) {
+            <small class="text-red-500">La descripción es obligatoria.</small>
+            }
+          </div>
+
+          <!-- OBJETIVO -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Objetivo
+              @if (dialogMode !== 'edit') { <span class="text-rose-500">*</span> }
+            </label>
+
+            <input type="text" formControlName="objetivo"
+              [class.border-red-500]="(dialogMode !== 'edit') && f['objetivo'].invalid && (f['objetivo'].touched || submitted)"
+              class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+
+            @if ((dialogMode !== 'edit') && f['objetivo'].invalid && (f['objetivo'].touched || submitted)) {
+            <small class="text-red-500">El objetivo es obligatorio.</small>
+            }
+          </div>
+
+          <!-- ESPECIALIZACIÓN -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Especialización <span class="text-rose-500">*</span>
+            </label>
+
+            <p-select formControlName="idEspecializcion" [options]="especializaciones" optionLabel="descripcion"
+              optionValue="id" placeholder="Selecciona una especialización" class="mt-1 w-full" appendTo="body"
+              [invalid]="f['idEspecializcion'].invalid && (f['idEspecializcion'].touched || submitted)">
+            </p-select>
+
+            @if (f['idEspecializcion'].invalid && (f['idEspecializcion'].touched || submitted)) {
+            <small class="text-red-500">La especialización es obligatoria.</small>
+            }
+          </div>
+
+          <!-- MODALIDAD -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Modalidad <span class="text-rose-500">*</span>
+            </label>
+
+            <p-select formControlName="idModalidad" [options]="modalidades" optionLabel="descripcion" optionValue="id"
+              placeholder="Selecciona una modalidad" class="mt-1 w-full" appendTo="body"
+              [invalid]="f['idModalidad'].invalid && (f['idModalidad'].touched || submitted)">
+            </p-select>
+
+            @if (f['idModalidad'].invalid && (f['idModalidad'].touched || submitted)) {
+            <small class="text-red-500">La modalidad es obligatoria.</small>
+            }
+          </div>
+
+          <!-- # RESIDENTES -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              # Residentes <span class="text-rose-500">*</span>
+            </label>
+
+            <input type="number" formControlName="noResidentes" min="1"
+              [class.border-red-500]="f['noResidentes'].invalid && (f['noResidentes'].touched || submitted)"
+              class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+
+            @if (f['noResidentes'].invalid && (f['noResidentes'].touched || submitted)) {
+            <small class="text-red-500">Debe ser un número mayor o igual a 1.</small>
+            }
+          </div>
+
+          <!-- HORARIO -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Horario
+              @if (dialogMode !== 'edit') { <span class="text-rose-500">*</span> }
+            </label>
+
+            <div class="flex gap-2">
+              <input type="time" formControlName="horarioInicio"
+                [class.border-red-500]="(dialogMode !== 'edit') && f['horarioInicio'].invalid && (f['horarioInicio'].touched || submitted)"
+                class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+
+              <span class="text-sm text-gray-700 dark:text-gray-300 self-center">-</span>
+
+              <input type="time" formControlName="horarioFin" [class.border-red-500]="
+              (
+                ((dialogMode !== 'edit') && f['horarioFin'].invalid && (f['horarioFin'].touched || submitted))
+                || (form.errors?.['timeRange'] && (f['horarioFin'].touched || submitted))
+              )
+            " class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+            </div>
+
+            <!-- mensajes SOLO para CREATE -->
+            @if (dialogMode !== 'edit') {
+            @if (f['horarioInicio'].invalid && (f['horarioInicio'].touched || submitted)) {
+            <small class="text-red-500">El horario de inicio es obligatorio.</small>
+            }
+
+            @if (f['horarioFin'].invalid && (f['horarioFin'].touched || submitted)) {
+            <small class="text-red-500 block">El horario de fin es obligatorio.</small>
+            }
+            }
+
+            <!-- este mensaje puede vivir en ambos (no altera tu edit, solo valida rango) -->
+            @if (form.errors?.['timeRange'] && (f['horarioFin'].touched || submitted)) {
+            <small class="text-red-500">El fin debe ser mayor al inicio.</small>
+            }
+          </div>
+
+          <!-- PERIODO -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Periodo <span class="text-rose-500">*</span>
+            </label>
+
+            <p-select [options]="periodos" optionLabel="nombre" optionValue="id" formControlName="idPeriodoAcademico"
+              placeholder="Seleccione un período" class="w-full mt-1" appendTo="body"
+              [invalid]="f['idPeriodoAcademico'].invalid && (f['idPeriodoAcademico'].touched || submitted)">
+            </p-select>
+
+            @if (f['idPeriodoAcademico'].invalid && (f['idPeriodoAcademico'].touched || submitted)) {
+            <small class="text-red-500">El período es obligatorio.</small>
+            }
+          </div>
+
+          <!-- ESTADO (solo EDIT) -->
+          @if (dialogMode === 'edit') {
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Estado del proyecto <span class="text-rose-500">*</span>
+            </label>
+
+            <p-select formControlName="idEstado" [options]="estados" optionLabel="descripcion" optionValue="id"
+              placeholder="Selecciona un estado" class="mt-1 w-full" appendTo="body" [filter]="true"
+              filterBy="descripcion" [invalid]="f['idEstado'].invalid && (f['idEstado'].touched || submitted)">
+            </p-select>
+
+            @if (f['idEstado'].invalid && (f['idEstado'].touched || submitted)) {
+            <small class="text-red-500">El estado es obligatorio.</small>
+            }
+          </div>
+          }
+
+          <!-- DOCUMENTO DEL PROYECTO -->
+          <div class="sm:col-span-2 border rounded-md p-3 dark:border-gray-600">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <div class="font-medium">Documento del proyecto</div>
+
+              @if (docLoading) {
+              <span class="text-xs text-gray-500">Cargando</span>
+              } @else {
+              @if (docMeta.exists) {
+              <span class="text-xs text-emerald-600">Subido</span>
+              } @else {
+              <span class="text-xs text-gray-500">Sin documento</span>
+              }
+              }
+            </div>
+
+            @if (docMeta.exists) {
+            <div class="text-xs text-gray-500 mt-1">
+              <div><b>{{ docMeta.nombreOriginal }}</b></div>
+              <div>{{ docMeta.fechaSubida | fechaEs:true }}</div>
+            </div>
+            } @else {
+            @if (!currentId) {
+            <div class="text-xs text-gray-500 mt-1">
+              Guarda el proyecto para poder subir el documento.
+            </div>
+            }
+            }
+
+            <div class="mt-3 flex flex-col gap-2">
+
+              <input #docFileInput type="file" class="hidden" (change)="onDocumentoFileSelected($event)"
+                [disabled]="docUploading || docDeleting"
+                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+
+              <button type="button"
+                class="bg-gray-600 hover:bg-gray-700 text-white py-1 px-3 rounded-md shadow-md disabled:opacity-60 w-fit"
+                [disabled]="docUploading || docDeleting" (click)="docFileInput.click()">
+                Seleccionar archivo
+              </button>
+
+              @if (docSelectedFile) {
+              <div class="text-xs text-gray-500">
+                Seleccionado: <b>{{ docSelectedFile.name }}</b>
+              </div>
+              }
+
+              @if (docSelectedFileError) {
+              <div class="text-xs text-rose-500">{{ docSelectedFileError }}</div>
+              }
+
+              @if(!(!docMeta.exists || docUploading || docDeleting)){
+
+              <div class="flex gap-2 flex-wrap mt-2">
+                <button type="button"
+                  class="bg-sky-600 hover:bg-sky-700 text-white py-1 px-3 rounded-md shadow-md disabled:opacity-60"
+                  (click)="verDocumentoProyecto()">
+                  Ver Documento
+                </button>
+              </div>
+              }
+
+
+              <div class="text-xs text-gray-500 mt-2">
+                ✅ El documento seleccionado se subirá al presionar <b>Guardar</b> (reemplaza si ya existe).
+              </div>
+            </div>
+          </div>
+
+          <!-- BOTONES -->
+          <div class="sm:col-span-2 flex justify-between mt-6 gap-3 flex-col sm:flex-row">
+            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md shadow-md">
+              {{ isEditing() ? 'Actualizar Proyecto' : 'Agregar Proyecto' }}
+            </button>
+
+            <div class="flex gap-2 w-full sm:w-auto justify-end">
+              <button type="button" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md shadow-md"
+                (click)="cancelarEdicion(); showDialog=false;">
+                Cancelar
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </form>
+
+    </p-dialog>
+
+
+
+
+    <p-dialog [(visible)]="showAsignarRevisorDialog" [modal]="true" [draggable]="false" [dismissableMask]="true"
+      [style]="{ width: '95%', maxWidth: '520px' }">
+
+      <ng-template pTemplate="header">
+        <div class="text-xl font-semibold">Asignar revisor de anteproyecto</div>
+      </ng-template>
+
+      <div class="flex flex-col gap-3">
+        <div class="text-sm text-gray-600 dark:text-gray-200">
+          Proyecto: <b>{{ selectedProyecto?.titulo || ('#' + selectedProyecto?.id) }}</b>
+        </div>
+
+        <label class="text-sm font-medium">Docente revisor</label>
+
+        <p-select [options]="docentesOptions" optionLabel="label" optionValue="value" [(ngModel)]="selectedDocenteId"
+          placeholder="Busca y selecciona un docente" class="w-full" appendTo="body" [filter]="true" filterBy="label"
+          [showClear]="true">
+        </p-select>
+
+        @if (selectedDocenteId) {
+        <div class="text-xs text-gray-500 mt-2">
+          {{ getDocenteCargaTexto(selectedDocenteId) }}
+        </div>
+        }
+
+
+
+        <div class="flex justify-end gap-2 mt-3">
+          <button class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md" (click)="closeAsignarRevisor()">
+            Cancelar
+          </button>
+          <button class="bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 rounded-md"
+            (click)="confirmAsignarRevisor()" [disabled]="!selectedDocenteId">
+            Asignar
+          </button>
+        </div>
+      </div>
+    </p-dialog>
+
+    <p-dialog header="Detalles del Proyecto" [(visible)]="showDetallesDialog" [modal]="true" [closable]="true"
+      [dismissableMask]="true" [draggable]="false" [resizable]="true" [blockScroll]="true"
+      [style]="{ width: '96vw', maxWidth: '1450px', height: '90vh' }"
+      [contentStyle]="{ overflow: 'auto', maxHeight: 'calc(90vh - 110px)' }">
+      <ng-template pTemplate="header">
+        <div class="flex items-center gap-3">
+          <div class="h-11 w-11 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 7l9-4 9 4-9 4-9-4zm0 0v10l9 4 9-4V7" />
+            </svg>
+          </div>
+
+          <div>
+            <div class="text-xl font-bold text-slate-800 dark:text-white">
+              Detalles del proyecto
+            </div>
+            <div class="text-sm text-slate-500 dark:text-slate-300">
+              Consulta integral del proyecto, entregables e integrantes
+            </div>
+          </div>
+        </div>
+      </ng-template>
+
+      <div *ngIf="detallesProyecto" class="space-y-5">
+
+        <!-- RESUMEN SUPERIOR -->
+        <div
+          class="rounded-3xl border border-slate-200/80 dark:border-slate-700/80 bg-gradient-to-r from-white to-slate-50 dark:from-slate-800 dark:to-slate-800 shadow-sm p-5">
+          <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2 mb-2">
+                <span
+                  class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-sky-100 text-sky-700">
+                  Proyecto
+                </span>
+
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border" [ngClass]="{
+                'bg-amber-100 text-amber-800 border-amber-200': detallesProyecto.idEstado === 3 || detallesProyecto.idEstado === 4,
+                'bg-slate-100 text-slate-700 border-slate-200': detallesProyecto.idEstado === 1,
+                'bg-blue-100 text-blue-700 border-blue-200': detallesProyecto.idEstado === 2,
+                'bg-cyan-100 text-cyan-700 border-cyan-200': detallesProyecto.idEstado === 6,
+                'bg-green-100 text-green-700 border-green-200': detallesProyecto.idEstado === 7,
+                'bg-emerald-100 text-emerald-700 border-emerald-200': detallesProyecto.idEstado === 8,
+                'bg-red-100 text-red-700 border-red-200': detallesProyecto.idEstado === 9
+              }">
+                  {{ getEstadoProyectoLabel(detallesProyecto.idEstado) }}
+                </span>
+              </div>
+
+              <h2 class="text-2xl font-bold text-slate-900 dark:text-white break-words">
+                {{ detallesProyecto.titulo }}
+              </h2>
+
+              <div class="mt-3 flex flex-wrap gap-2 text-sm">
+                <span
+                  class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200">
+                  <span class="font-medium">Empresa:</span>
+                  {{ getEmpresaNombre(detallesProyecto.idEmpresa) || '—' }}
+                </span>
+
+                <span
+                  class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200">
+                  <span class="font-medium">Período:</span>
+                  {{ getPeriodoNombre(detallesProyecto.idPeriodoAcademico) || '—' }}
+                </span>
+
+                <span
+                  class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200">
+                  <span class="font-medium">Modalidad:</span>
+                  {{ getModalidadDescripcion(detallesProyecto.idModalidad) || '—' }}
+                </span>
+
+                <span
+                  class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200">
+                  <span class="font-medium">Cupo:</span>
+                  {{ detallesProyecto.noResidentes || 0 }}
+                </span>
+
+                <span
+                  class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200">
+                  <span class="font-medium">Origen:</span>
+                  {{ proyectoOrigenLabel }}
+                </span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 min-w-[260px]">
+              <div
+                class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4 shadow-sm">
+                <div class="text-xs uppercase tracking-wide text-slate-400">Integrantes</div>
+                <div class="text-2xl font-bold text-slate-800 dark:text-white mt-1">
+                  {{ integrantesInfo.length || 0 }}
+                </div>
+              </div>
+
+              <div
+                class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4 shadow-sm">
+                <div class="text-xs uppercase tracking-wide text-slate-400">Expedientes completos</div>
+                <div class="text-2xl font-bold text-emerald-600 mt-1">
+                  {{ expedientesCompletosCount }}/{{ expedientesTotalesCount }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GRID INFO -->
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+          <!-- INFORMACIÓN GENERAL -->
+          <div
+            class="xl:col-span-1 rounded-3xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800 shadow-sm p-5">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="h-9 w-9 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 6v.01" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <div class="font-semibold text-slate-800 dark:text-white">Información general</div>
+                <div class="text-xs text-slate-500 dark:text-slate-300">Datos principales del proyecto</div>
+              </div>
+            </div>
+
+            <div class="space-y-4 text-sm">
+              <div
+                class="rounded-2xl bg-slate-50 dark:bg-slate-900/40 p-4 border border-slate-200 dark:border-slate-700">
+                <div class="text-xs uppercase tracking-wide text-slate-400 mb-1">Descripción</div>
+                <div class="text-slate-700 dark:text-slate-200">
+                  {{ detallesProyecto.descripcion || 'Sin descripción' }}
+                </div>
+              </div>
+
+              <div
+                class="rounded-2xl bg-slate-50 dark:bg-slate-900/40 p-4 border border-slate-200 dark:border-slate-700">
+                <div class="text-xs uppercase tracking-wide text-slate-400 mb-1">Objetivo</div>
+                <div class="text-slate-700 dark:text-slate-200">
+                  {{ detallesProyecto.objetivo || 'Sin objetivo' }}
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div
+                  class="rounded-2xl bg-slate-50 dark:bg-slate-900/40 p-4 border border-slate-200 dark:border-slate-700">
+                  <div class="text-xs uppercase tracking-wide text-slate-400 mb-1">Origen del proyecto</div>
+                  <div class="text-slate-700 dark:text-slate-200 font-semibold">
+                    {{ proyectoOrigenLabel }}
+                  </div>
+                </div>
+
+                <div
+                  class="rounded-2xl bg-slate-50 dark:bg-slate-900/40 p-4 border border-slate-200 dark:border-slate-700">
+                  <div class="text-xs uppercase tracking-wide text-slate-400 mb-1">Anteproyecto aceptado</div>
+                  <div class="text-slate-700 dark:text-slate-200 font-semibold">
+                    {{ anteproyectoFechaAceptacion ? formatFechaDetalleSolo(anteproyectoFechaAceptacion) : 'Pendiente de aceptación' }}
+                  </div>
+                </div>
+
+                <div
+                  class="rounded-2xl bg-slate-50 dark:bg-slate-900/40 p-4 border border-slate-200 dark:border-slate-700">
+                  <div class="text-xs uppercase tracking-wide text-slate-400 mb-1">Entrega reporte parcial 1</div>
+                  <div class="text-slate-700 dark:text-slate-200 font-semibold">
+                    {{ fechaEntregaReporteParcial1 ? formatFechaDetalleSolo(fechaEntregaReporteParcial1) : 'Se definirá cuando el anteproyecto sea aceptado' }}
+                  </div>
+                  <div class="text-[11px] text-slate-500 mt-1">6 semanas después de la aceptación del anteproyecto.</div>
+                </div>
+
+                <div
+                  class="rounded-2xl bg-slate-50 dark:bg-slate-900/40 p-4 border border-slate-200 dark:border-slate-700">
+                  <div class="text-xs uppercase tracking-wide text-slate-400 mb-1">Entrega reporte parcial 2</div>
+                  <div class="text-slate-700 dark:text-slate-200 font-semibold">
+                    {{ fechaEntregaReporteParcial2 ? formatFechaDetalleSolo(fechaEntregaReporteParcial2) : 'Se definirá cuando el anteproyecto sea aceptado' }}
+                  </div>
+                  <div class="text-[11px] text-slate-500 mt-1">12 semanas después de la aceptación del anteproyecto.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- COMITÉ -->
+          <div
+            class="xl:col-span-2 rounded-3xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800 shadow-sm p-5">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="h-9 w-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M17 20h5V18a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1M9 7a4 4 0 118 0 4 4 0 01-8 0zm8 0a4 4 0 118 0 4 4 0 01-8 0z" />
+                </svg>
+              </div>
+              <div>
+                <div class="font-semibold text-slate-800 dark:text-white">Docentes</div>
+                <div class="text-xs text-slate-500 dark:text-slate-300">Asesor y revisores asignados</div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div
+                class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-4">
+                <div class="text-xs uppercase tracking-wide text-slate-400 mb-2">Asesor interno</div>
+                <div class="font-semibold text-slate-800 dark:text-white flex items-center gap-2 flex-wrap">
+                  {{ asesorInternoNombre || 'No asignado' }}
+                  @if (asesorInternoId && puedeGestionarAsesorYRevisores(detallesProyecto) && canSustituirDocente) {
+                    <button type="button"
+                      class="inline-flex items-center gap-1 bg-amber-100 hover:bg-amber-200 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 py-1 px-2.5 rounded-full text-xs font-medium"
+                      (click)="abrirSustitucion('ASESOR_INTERNO', asesorInternoId, asesorInternoNombre ?? '')">
+                      <i class="pi pi-refresh text-[10px]"></i> Sustituir
+                    </button>
+                  }
+                </div>
+                @if (asesorInternoCorreo) {
+                <div class="text-xs text-slate-500 mt-1">{{ asesorInternoCorreo }}</div>
+                }
+              </div>
+
+
+
+              <div
+                class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-4 md:col-span-2 xl:col-span-1">
+                <div class="text-xs uppercase tracking-wide text-slate-400 mb-2">Revisores</div>
+
+                @if (revisoresInfo.length) {
+                <div class="space-y-2">
+                  <div *ngFor="let r of revisoresInfo"
+                    class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2">
+                    <div class="font-medium text-slate-800 dark:text-white text-sm">{{ r.nombre }}</div>
+                    @if (r.correo) {
+                    <div class="text-xs text-slate-500">{{ r.correo }}</div>
+                    }
+                    @if (puedeGestionarAsesorYRevisores(detallesProyecto) && canSustituirDocente) {
+                      <button type="button"
+                        class="mt-1 inline-flex items-center gap-1 bg-amber-100 hover:bg-amber-200 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 py-1 px-2 rounded-full text-xs"
+                        (click)="abrirSustitucion('REVISOR_RESIDENCIA', r.idDocente, r.nombre)">
+                        <i class="pi pi-refresh text-[10px]"></i> Sustituir
+                      </button>
+                    }
+                  </div>
+                </div>
+                } @else {
+                <div class="text-sm text-slate-500">No asignados</div>
+                }
+              </div>
+
+              <div
+                class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-4">
+                <div class="text-xs uppercase tracking-wide text-slate-400 mb-2">Revisor de anteproyecto</div>
+                <div class="font-semibold text-slate-800 dark:text-white">
+                  {{ revisorAnteproyectoNombre || 'No asignado' }}
+                </div>
+                @if (revisorAnteproyectoCorreo) {
+                <div class="text-xs text-slate-500 mt-1">{{ revisorAnteproyectoCorreo }}</div>
+                }
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ENTREGABLES -->
+        <div
+          class="rounded-3xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800 shadow-sm p-5">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
+            <div>
+              <div class="font-semibold text-slate-800 dark:text-white">Entregables por etapa</div>
+              <div class="text-sm text-slate-500 dark:text-slate-300">
+                Historial de archivos y estado más reciente de cada versión
+              </div>
+            </div>
+
+            <div class="flex gap-2 flex-wrap">
+              <button *ngFor="let s of stagesEntregables"
+                class="px-4 py-2 rounded-2xl text-sm font-medium border transition-all" [ngClass]="{
+              'bg-sky-600 text-white border-sky-600 shadow-sm': selectedTipoEntregable === s.key,
+              'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 hover:border-sky-300': selectedTipoEntregable !== s.key
+            }" type="button" (click)="onSelectEtapaEntregables(s.key)">
+                {{ s.label }}
+              </button>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            @if (entregablesLoading) {
+            <div class="p-6 text-sm text-slate-500">Cargando entregables...</div>
+            } @else if (!entregablesActual.length) {
+            <div class="p-6 text-sm text-slate-500">No hay versiones cargadas en esta etapa.</div>
+            } @else {
+            <p-table [value]="entregablesActual" [tableStyle]="{ 'min-width': '100%' }" dataKey="idVersion"
+              [rowHover]="true" class="dark:bg-gray-700">
+
+              <ng-template pTemplate="header">
+                <tr>
+                  <th class="px-3 py-3 text-left">Fecha</th>
+                  <th class="px-3 py-3 text-left">Archivo</th>
+                  <th class="px-3 py-3 text-left">Subido por</th>
+                  <th class="px-3 py-3 text-left">Estado</th>
+                  <th class="px-3 py-3 text-left">Acciones</th>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="body" let-r>
+                <tr>
+                  <td class="px-3 py-3 dark:bg-gray-700">
+                    {{ r?.fechaSubida ? (r.fechaSubida | fechaEs:true) : '—' }}
+                  </td>
+
+                  <td class="px-3 py-3 dark:bg-gray-700">
+                    <div class="font-medium text-slate-700 dark:text-slate-200">
+                      {{ r?.nombreOriginal || '—' }}
+                    </div>
+                  </td>
+
+                  <td class="px-3 py-3 dark:bg-gray-700">
+                    {{ r?.subidoPor || '—' }}
+                  </td>
+
+                  <td class="px-3 py-3 dark:bg-gray-700">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border"
+                      [ngClass]="{
+                      'bg-gray-100 text-gray-800 border-gray-200': r.estadoVisible === 'POR_REVISAR',
+                      'bg-amber-100 text-amber-800 border-amber-200': r.estadoVisible === 'REVISADO',
+                      'bg-emerald-100 text-emerald-800 border-emerald-200': r.estadoVisible === 'ACEPTADO',
+                      'bg-rose-100 text-rose-800 border-rose-200': r.estadoVisible === 'RECHAZADO'
+                    }">
+                      {{ r.estadoVisible }}
+                    </span>
+                  </td>
+
+                  <td class="px-3 py-3 dark:bg-gray-700">
+                    <button class="bg-sky-600 hover:bg-sky-700 text-white py-2 px-3 rounded-xl shadow-sm" type="button"
+                      (click)="verEntregableVersion(r)">
+                      Ver PDF
+                    </button>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+            }
+          </div>
+        </div>
+
+        <!-- INTEGRANTES + EXPEDIENTES -->
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+
+          <!-- INTEGRANTES -->
+          <div
+            class="rounded-3xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800 shadow-sm p-5">
+            <div class="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <div class="font-semibold text-slate-800 dark:text-white">Integrantes</div>
+                <div class="text-sm text-slate-500 dark:text-slate-300">
+                  Alumnos asignados al proyecto
+                </div>
+              </div>
+
+              <span
+                class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
+                {{ integrantesInfo.length }} alumno(s)
+              </span>
+            </div>
+
+            @if (!integrantesInfo.length) {
+            <div class="text-sm text-gray-500">Sin integrantes</div>
+            } @else {
+            <div class="rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+              <p-table [value]="integrantesInfo" [tableStyle]="{ 'min-width': '100%' }" dataKey="noControl"
+                [rowHover]="true" class="dark:bg-gray-700">
+
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th class="px-3 py-3 text-left">No. Control</th>
+                    <th class="px-3 py-3 text-left">Nombre</th>
+                    <th class="px-3 py-3 text-left">Correo institucional</th>
+                    <th class="px-3 py-3 text-left">Acciones</th>
+                  </tr>
+                </ng-template>
+
+                <ng-template pTemplate="body" let-al>
+                  <tr>
+                    <td class="px-3 py-3 dark:bg-gray-700">
+                      {{ al?.noControl ?? al?.numeroControl ?? '—' }}
+                    </td>
+
+                    <td class="px-3 py-3 dark:bg-gray-700">
+                      <div class="font-medium text-slate-700 dark:text-slate-200">
+                        {{ (al?.nombre || '') + ' ' + (al?.apellidoPaterno || '') + ' ' + (al?.apellidoMaterno || '') }}
+                      </div>
+                    </td>
+
+                    <td class="px-3 py-3 dark:bg-gray-700">
+                      {{ al?.correoInstitucional ?? al?.correo ?? '—' }}
+                    </td>
+
+                    <td class="px-3 py-3 dark:bg-gray-700">
+                      <button type="button"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-3 rounded-xl shadow-sm"
+                        (click)="irAExpedienteAlumno(al)">
+                        Expediente
+                      </button>
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            </div>
+
+            @if (!isProyectoCancelado(detallesProyecto) && canExpedirDocs) {
+            <div class="flex justify-end gap-2 mt-4 flex-wrap">
+              <button class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-3 rounded-xl shadow-sm" type="button"
+                (click)="openDocsPreview('ACEPTACION')">
+                📄 Constancias aceptación
+              </button>
+
+              <button class="bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 rounded-xl shadow-sm"
+                type="button" (click)="openDocsPreview('OFICIO_ASESOR')">
+                🧾 Oficios asesor
+              </button>
+            </div>
+            }
+            }
+          </div>
+
+          <!-- EXPEDIENTES -->
+          <div
+            class="rounded-3xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800 shadow-sm p-5">
+            <div class="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <div class="font-semibold text-slate-800 dark:text-white">Expedientes del proyecto</div>
+                <div class="text-sm text-slate-500 dark:text-slate-300">
+                  Validación de cierre por integrante
+                </div>
+              </div>
+
+              <span
+                class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                {{ expedientesCompletosCount }}/{{ expedientesTotalesCount }} completos
+              </span>
+            </div>
+
+            @if (!resumenExpedienteProyecto.length) {
+            <div class="text-sm text-gray-500">
+              No se ha podido calcular el estado de expedientes.
+            </div>
+            } @else {
+            <div class="space-y-3">
+              <div *ngFor="let r of resumenExpedienteProyecto" class="rounded-2xl border p-4" [ngClass]="r.complete
+                ? 'border-emerald-200 bg-emerald-50/60 dark:bg-emerald-900/10'
+                : 'border-amber-200 bg-amber-50/60 dark:bg-amber-900/10'">
+
+                <div class="flex items-center justify-between gap-3 flex-wrap">
+                  <div class="font-semibold text-slate-800 dark:text-white">{{ r.nombre }}</div>
+
+                  <span *ngIf="r.complete"
+                    class="px-2.5 py-1 rounded-full text-xs bg-emerald-100 text-emerald-700 font-semibold">
+                    Completo ({{ r.done }}/{{ r.required }})
+                  </span>
+
+                  <span *ngIf="!r.complete"
+                    class="px-2.5 py-1 rounded-full text-xs bg-amber-100 text-amber-700 font-semibold">
+                    Pendiente ({{ r.done }}/{{ r.required }})
+                  </span>
+                </div>
+
+                <div *ngIf="!r.complete && r.missing.length" class="mt-3 text-xs text-slate-600 dark:text-slate-300">
+                  <span class="font-semibold">Faltan por subir:</span>
+                  {{ joinExpedienteLabels(r.missing) }}
+                </div>
+
+                <div *ngIf="!r.complete && r.pendingReview.length"
+                  class="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                  <span class="font-semibold">Pendientes de aceptación:</span>
+                  {{ joinExpedienteLabels(r.pendingReview) }}
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="mt-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-4">
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <div class="font-semibold text-slate-800 dark:text-white">Cierre del proyecto</div>
+                  <div class="text-sm text-slate-500 dark:text-slate-300">
+                    El proyecto solo puede finalizar cuando todos los expedientes estén completos y aceptados.
+                  </div>
+                </div>
+
+                <button type="button"
+                  class="bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-5 rounded-2xl shadow-sm disabled:opacity-60"
+                  (click)="intentarFinalizarProyectoDetalle()"
+                  [disabled]="finalizandoProyecto || !puedeFinalizarProyectoDetalle()">
+                  <ng-container *ngIf="!finalizandoProyecto">Finalizar proyecto</ng-container>
+                  <ng-container *ngIf="finalizandoProyecto">Finalizando...</ng-container>
+                </button>
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+
+      </div>
+    </p-dialog>
+
+    <p-dialog [(visible)]="showAsignarAsesorRevisoresDialog" [modal]="true" [draggable]="false" [dismissableMask]="true"
+      [style]="{ width: '95%', maxWidth: '640px' }">
+      <ng-template pTemplate="header">
+        <div class="text-xl font-semibold">Asignación · Asesor interno y revisores</div>
+      </ng-template>
+
+      <div class="flex flex-col gap-4">
+        <div class="text-sm text-gray-600 dark:text-gray-200">
+          Proyecto: <b>{{ selectedProyecto?.titulo || ('#' + selectedProyecto?.id) }}</b>
+        </div>
+
+        @if (asigLoading) {
+        <div class="text-gray-500">Cargando asignaciones...</div>
+        } @else {
+
+        <!-- Asesor interno (1) -->
+        <div class="border rounded-md p-3 dark:border-gray-600">
+          <div class="font-medium mb-2">Asesor interno (1)</div>
+
+          <p-select [options]="docentesOptions" optionLabel="label" optionValue="value" [(ngModel)]="selectedAsesorId"
+            placeholder="Busca asesor interno" class="w-full" appendTo="body" [filter]="true" filterBy="label"
+            [showClear]="true">
+          </p-select>
+
+          @if (selectedAsesorId) {
+          <div class="text-xs text-gray-500 mt-2">
+            {{ getDocenteCargaTexto(selectedAsesorId) }}
+          </div>
+          }
+
+          <div class="text-xs text-gray-500 mt-2">
+            Actual: <b>{{ asesorInternoNombre || 'No asignado' }}</b>
+          </div>
+        </div>
+
+        <!-- Revisores (1 o más) -->
+        <div class="border rounded-md p-3 dark:border-gray-600">
+          <div class="font-medium mb-2">Revisores (1 o más)</div>
+
+          <p-multiSelect [options]="docentesOptions" optionLabel="label" optionValue="value"
+            [(ngModel)]="selectedRevisoresIds" defaultLabel="Busca y selecciona revisores" class="w-full"
+            appendTo="body" [filter]="true" filterBy="label">
+          </p-multiSelect>
+
+
+          <div class="text-xs text-gray-500 mt-2">
+            Seleccionados: <b>{{ (selectedRevisoresIds.length || 0) }}</b>
+          </div>
+
+          <!-- Lista de revisores actuales -->
+          <div class="mt-3">
+            <div class="text-sm font-medium mb-1">Asignados actualmente:</div>
+            <ul class="ml-5 list-disc text-sm">
+              <li *ngFor="let r of revisoresAsignadosNombres">{{ r }}</li>
+              @if (!revisoresAsignadosNombres.length) {
+              <li class="text-gray-500">No asignados</li>
+              }
+            </ul>
+          </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="flex justify-end gap-2 mt-2">
+          <button type="button" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md"
+            (click)="closeAsignarAsesorYRevisores()" [disabled]="asigSaving">
+            Cancelar
+          </button>
+
+          <button type="button" class="bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 rounded-md"
+            (click)="confirmGuardarAsesorYRevisores()" [disabled]="asigSaving">
+            {{ asigSaving ? 'Guardando...' : 'Guardar' }}
+          </button>
+        </div>
+        }
+      </div>
+    </p-dialog>
+
+    <p-dialog [(visible)]="showGeneracionMasivaDialog" [modal]="true" [draggable]="false" [dismissableMask]="true"
+      [style]="{ width: '95%', maxWidth: '780px' }">
+
+      <ng-template pTemplate="header">
+        <div class="text-xl font-semibold">Generación masiva</div>
+      </ng-template>
+
+      <div class="flex flex-col gap-4">
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="text-sm font-medium">Período</label>
+            <p-select [options]="periodos" optionLabel="nombre" optionValue="id" [(ngModel)]="masivoPeriodoId"
+              placeholder="Selecciona un período" class="w-full" appendTo="body" [filter]="true" filterBy="nombre"
+              (onChange)="buildMasivoPreview()">
+            </p-select>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">Tipos de documentos</label>
+
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" [(ngModel)]="masivoIncluyeAceptacion" (change)="buildMasivoPreview()" />
+              Constancias de aceptación (por integrante)
+            </label>
+
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" [(ngModel)]="masivoIncluyeOficioAsesor" (change)="buildMasivoPreview()" />
+              Oficios de asignación al asesor interno (por integrante)
+            </label>
+
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" [(ngModel)]="masivoIncluyeRevisores" (change)="buildMasivoPreview()" />
+              Documento para revisores (1 PDF: 1 página por revisor)
+            </label>
+          </div>
+        </div>
+
+        <div class="border rounded-md p-3 dark:border-gray-600">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="font-medium">Documentos a generar</div>
+
+            <div class="flex gap-2">
+              <button class="bg-gray-600 hover:bg-gray-700 text-white py-1 px-3 rounded-md" type="button"
+                (click)="selectAllMasivo(true)" [disabled]="!masivoItems.length">
+                Seleccionar todo
+              </button>
+
+              <button class="bg-gray-600 hover:bg-gray-700 text-white py-1 px-3 rounded-md" type="button"
+                (click)="selectAllMasivo(false)" [disabled]="!masivoItems.length">
+                Quitar todo
+              </button>
+            </div>
+          </div>
+
+          @if (!masivoItems.length) {
+          <div class="text-sm text-gray-500 mt-2">Selecciona período y al menos un tipo de documento.</div>
+          } @else {
+          <div class="mt-3 max-h-72 overflow-auto">
+            <div class="flex flex-col gap-2">
+              <div *ngFor="let it of masivoItems" class="flex items-start gap-2 border-b pb-2">
+                <input type="checkbox" [(ngModel)]="it.selected" [disabled]="!it.valid || masivoRunning" />
+
+                <div class="text-sm w-full">
+                  <div class="font-medium">
+                    {{ it.label }}
+
+                    <span *ngIf="!it.valid" class="ml-2 text-xs px-2 py-1 rounded bg-rose-100 text-rose-700">
+                      No generable
+                    </span>
+                  </div>
+
+                  <div class="text-xs text-gray-500">
+                    Proyecto #{{ it.proyectoId }} · {{ it.proyectoTitulo }}
+                  </div>
+
+                  <div *ngIf="!it.valid && it.reason" class="text-xs text-rose-600 mt-1">
+                    ⚠️ {{ it.reason }}
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+          }
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <button class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md" type="button"
+            (click)="showGeneracionMasivaDialog=false" [disabled]="masivoRunning">
+            Cerrar
+          </button>
+
+          <button class="bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 rounded-md disabled:opacity-60"
+            type="button" (click)="runMasivo()" [disabled]="masivoRunning || !masivoPeriodoId || !masivoSelectedCount">
+            @if (masivoRunning) { ⏳ Generando... } @else { Generar seleccionados ({{ masivoSelectedCount }}) }
+          </button>
+        </div>
+
+      </div>
+    </p-dialog>
+
+
+    <p-dialog [(visible)]="showDocsPreviewDialog" [modal]="true" [draggable]="false" [dismissableMask]="true"
+      [style]="{ width: '95%', maxWidth: '900px' }">
+
+      <ng-template pTemplate="header">
+        <div class="text-xl font-semibold">
+          📄 Preview de generación · {{ docsPreviewTipoLabel }}
+        </div>
+      </ng-template>
+
+      <div class="flex flex-col gap-3">
+
+        <div class="text-sm text-gray-600 dark:text-gray-200">
+          Proyecto: <b>{{ detallesProyecto?.titulo || ('#' + detallesProyecto?.id) }}</b>
+          <span class="ml-2 opacity-70">· Periodo: {{ getPeriodoNombre(detallesProyecto?.idPeriodoAcademico) }}</span>
+        </div>
+
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div class="text-sm">
+            Seleccionados: <b>{{ docsPreviewSelectedCount }}</b> / {{ docsPreviewItems.length }}
+          </div>
+
+          <div class="flex gap-2">
+            <button class="bg-gray-600 hover:bg-gray-700 text-white py-1 px-3 rounded-md" type="button"
+              (click)="selectAllDocsPreview(true)" [disabled]="!docsPreviewItems.length || docsPreviewRunning">
+              Seleccionar válidos
+            </button>
+
+            <button class="bg-gray-600 hover:bg-gray-700 text-white py-1 px-3 rounded-md" type="button"
+              (click)="selectAllDocsPreview(false)" [disabled]="!docsPreviewItems.length || docsPreviewRunning">
+              Quitar todo
+            </button>
+          </div>
+
+          @if (cupoLleno) {
+          <div class="text-xs text-rose-600 mt-2">
+            Cupo alcanzado ({{ integrantesActualesCount }}/{{ cupoProyectoSeleccionado }}). Ya no es posible agregar más
+            integrantes.
+          </div>
+          }
+
+        </div>
+
+        <div class="border rounded-md p-2 dark:border-gray-600 max-h-96 overflow-auto">
+          <div *ngFor="let it of docsPreviewItems" class="flex items-start gap-2 border-b py-2">
+            <input type="checkbox" [(ngModel)]="it.selected" [disabled]="!it.valid || docsPreviewRunning" />
+
+            <div class="text-sm w-full">
+              <div class="font-medium">
+                {{ it.displayName }}
+                <span class="ml-2 text-xs opacity-70">({{ it.noControl }})</span>
+
+                <span *ngIf="!it.valid" class="ml-2 text-xs px-2 py-1 rounded bg-rose-100 text-rose-700">
+                  No generable
+                </span>
+              </div>
+
+              <div class="text-xs text-gray-500">
+                Archivo: {{ it.fileName }}
+              </div>
+
+              <div *ngIf="!it.valid && it.reason" class="text-xs text-rose-600 mt-1">
+                ⚠️ {{ it.reason }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-2">
+          <button class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md" type="button"
+            (click)="showDocsPreviewDialog=false" [disabled]="docsPreviewRunning">
+            Cerrar
+          </button>
+
+          <button class="bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 rounded-md disabled:opacity-60"
+            type="button" (click)="generateDocsZip()" [disabled]="docsPreviewRunning || docsPreviewSelectedCount === 0">
+            @if (docsPreviewRunning) { ⏳ Generando ZIP... } @else { 📦 Generar ZIP ({{ docsPreviewSelectedCount }}) }
+          </button>
+        </div>
+
+      </div>
+    </p-dialog>
+
+    <p-dialog header="Visualizando PDF" [(visible)]="displayDialog" [modal]="true" [closable]="true"
+      [style]="{ width: '80vw', height: '80vh' }" [draggable]="false" [resizable]="false" (onHide)="liberarPdfUrl()">
+      <ngx-extended-pdf-viewer *ngIf="pdfUrl" [src]="pdfUrl" height="100%" [showToolbar]="true"
+        [showSidebarButton]="false" [showFindButton]="false" [showOpenFileButton]="false" [showPrintButton]="false"
+        [showDownloadButton]="true" [showPresentationModeButton]="false" [showRotateButton]="false"
+        [showHandToolButton]="false" [showSpreadButton]="false" [showPropertiesButton]="false" [textLayer]="false"
+        [showSecondaryToolbarButton]="false" [showStampEditor]="false" [showDrawEditor]="false" [showTextEditor]="false"
+        [showHighlightEditor]="false">
+      </ngx-extended-pdf-viewer>
+
+      <div *ngIf="!pdfUrl" class="p-3 text-center text-gray-600">
+        Cargando documento...
+      </div>
+    </p-dialog>
+
+    <!-- ============================== -->
+    <!-- 🧾 VISOR PDF (copiado de Seguimiento) -->
+    <!-- ============================== -->
+    <p-dialog header="Visualizando PDF" [(visible)]="displayPdfDialog" [modal]="true" [closable]="true"
+      [style]="{ width: '80vw', height: '80vh' }" [draggable]="false" [resizable]="false" (onHide)="liberarPdfUrl()">
+
+      <ngx-extended-pdf-viewer *ngIf="pdfUrl" [src]="pdfUrl" height="100%" [showToolbar]="true"
+        [showSidebarButton]="false" [showFindButton]="false" [showOpenFileButton]="false" [showPrintButton]="false"
+        [showDownloadButton]="true" [showPresentationModeButton]="false" [showRotateButton]="false"
+        [showHandToolButton]="false" [showSpreadButton]="false" [showPropertiesButton]="false" [textLayer]="false"
+        [showSecondaryToolbarButton]="false" [showStampEditor]="false" [showDrawEditor]="false" [showTextEditor]="false"
+        [showHighlightEditor]="false">
+      </ngx-extended-pdf-viewer>
+
+      <div *ngIf="!pdfUrl" class="p-3 text-center text-gray-600">
+        Cargando documento...
+      </div>
+    </p-dialog>
+
+    <p-dialog header="Gestionar equipo del proyecto" [(visible)]="showGestionEquipoDialog" [modal]="true"
+      [closable]="true" [dismissableMask]="true" [draggable]="false" [resizable]="true" [blockScroll]="true"
+      [style]="{ width: '96vw', maxWidth: '1200px', height: '85vh' }"
+      [contentStyle]="{ overflow: 'auto', maxHeight: 'calc(85vh - 120px)' }">
+
+      <div *ngIf="detallesProyecto" class="flex flex-col gap-4">
+
+        <div class="text-sm text-gray-600 dark:text-gray-200">
+          Proyecto: <b>{{ detallesProyecto.titulo }}</b>
+        </div>
+
+        @if (gestionEquipoLoading) {
+        <div class="text-gray-500">Cargando...</div>
+        }
+
+        <!-- Agregar integrante -->
+        <div class="border rounded-md p-3 dark:border-gray-600">
+          <div class="font-medium mb-2">Agregar integrante</div>
+
+          <div class="flex flex-col md:flex-row gap-2 items-start md:items-center">
+            <p-select [options]="alumnosLibres" optionLabel="noControl" optionValue="id"
+              [(ngModel)]="selectedAlumnoLibreId" [filter]="true" placeholder="Selecciona alumno libre"
+              [disabled]="cupoLleno || gestionEquipoReadOnly" [style]="{ width: '100%' }">
+              <ng-template let-a pTemplate="item">
+                <div class="flex flex-col">
+                  <div class="font-medium">
+                    {{ a.noControl }} · {{ a.nombre }} {{ a.apellidoPaterno }} {{ a.apellidoMaterno }}
+                  </div>
+                  <div class="text-xs text-gray-500">{{ a.correo }}</div>
+                </div>
+              </ng-template>
+            </p-select>
+
+
+            <button
+              class="bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 rounded-md shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+              type="button" (click)="agregarIntegranteSeleccionado()"
+              [disabled]="gestionEquipoReadOnly || cupoLleno || !selectedAlumnoLibreId">
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <!-- Alerta: integrantes exceden el cupo actual -->
+        @if (excedeCupo) {
+        <div class="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50
+                    dark:border-amber-600 dark:bg-amber-900/20 p-3 text-sm">
+          <i class="pi pi-exclamation-triangle text-amber-500 mt-0.5 shrink-0"></i>
+          <div>
+            <p class="font-medium text-amber-800 dark:text-amber-300">
+              Integrantes en exceso
+            </p>
+            <p class="text-amber-700 dark:text-amber-400 mt-0.5">
+              El proyecto tiene cupo para <strong>{{ cupoProyectoSeleccionado }}</strong>
+              residente(s), pero hay <strong>{{ integrantesActualesCount }}</strong> asignados.
+              Debes quitar <strong>{{ sobrantesCount }}</strong> estudiante(s) usando el botón
+              <em>Quitar</em> de la tabla.
+            </p>
+          </div>
+        </div>
+        }
+
+        <!-- Lista integrantes con acción quitar -->
+        <div class="border rounded-md p-3 dark:border-gray-600">
+          <div class="font-medium mb-2">Integrantes actuales <span class="text-xs text-gray-500 font-normal ml-2">({{
+              integrantesActualesCount }} / {{ cupoProyectoSeleccionado || '—' }})</span></div>
+
+          @if (!integrantesInfo.length) {
+          <div class="text-sm text-gray-500">Sin integrantes</div>
+          } @else {
+          <p-table [value]="integrantesInfo" [tableStyle]="{ 'min-width': '100%' }" dataKey="id" [rowHover]="true">
+            <ng-template pTemplate="header">
+              <tr>
+                <th class="px-3 py-2 text-left">No. Control</th>
+                <th class="px-3 py-2 text-left">Nombre</th>
+                <th class="px-3 py-2 text-left">Correo</th>
+                <th class="px-3 py-2 text-left">Acciones</th>
+              </tr>
+            </ng-template>
+
+            <ng-template pTemplate="body" let-al>
+              <tr>
+                <td class="px-3 py-2">{{ al?.noControl ?? '—' }}</td>
+                <td class="px-3 py-2">
+                  {{ (al?.nombre || '') + ' ' + (al?.apellidoPaterno || '') + ' ' + (al?.apellidoMaterno || '') }}
+                </td>
+                <td class="px-3 py-2">{{ al?.correo ?? '—' }}</td>
+                <td class="px-3 py-2">
+                  <button
+                    class="py-1 px-3 rounded-md shadow-md text-white transition-colors"
+                    [class.bg-rose-600]="!excedeCupo"
+                    [class.hover:bg-rose-700]="!excedeCupo"
+                    [class.bg-amber-500]="excedeCupo"
+                    [class.hover:bg-amber-600]="excedeCupo"
+                    [class.animate-pulse]="excedeCupo"
+                    type="button"
+                    (click)="quitarIntegrante(al?.id)"
+                    [disabled]="gestionEquipoReadOnly"
+                    [title]="excedeCupo ? 'El proyecto tiene más integrantes que su cupo — quita este estudiante' : 'Quitar del proyecto'">
+                    <i class="pi pi-user-minus mr-1 text-xs"></i>
+                    Quitar
+                  </button>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+          }
+        </div>
+        <!-- Revisor de anteproyecto (misma vista) -->
+        <div class="border rounded-md p-3 dark:border-gray-600">
+          <div class="font-medium mb-2">Revisor de anteproyecto</div>
+
+          @if (gestionEquipoReadOnly || !puedeCambiarRevisorAnteproyecto(detallesProyecto)) {
+          <div class="text-sm text-amber-600 mb-3">
+            Solo es posible asignar o modificar el revisor de anteproyecto cuando ya existe al menos una versión
+            subida del anteproyecto, el proyecto está en estado 3 o 4, y todavía no hay dictamen final.
+          </div>
+          }
+
+
+          <p-select [options]="docentesOptions" optionLabel="label" optionValue="value"
+            [(ngModel)]="gestionRevisorAnteproyectoId" placeholder="Busca revisor de anteproyecto" class="w-full"
+            appendTo="body" [filter]="true" filterBy="label" [showClear]="true"
+            [disabled]="gestionEquipoReadOnly || !puedeCambiarRevisorAnteproyecto(detallesProyecto)">
+          </p-select>
+
+          @if (gestionRevisorAnteproyectoId) {
+          <div class="text-xs text-gray-500 mt-2">
+            {{ getDocenteCargaTexto(gestionRevisorAnteproyectoId) }}
+          </div>
+          }
+
+          <div class="flex justify-end gap-2 mt-3">
+
+
+
+
+            <button type="button" class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md"
+              (click)="guardarRevisorAnteproyectoGestion()"
+              [disabled]="gestionRevisorAnteproyectoSaving || gestionEquipoReadOnly || !puedeCambiarRevisorAnteproyecto(detallesProyecto)">
+              {{ gestionRevisorAnteproyectoSaving ? 'Guardando...' : 'Guardar' }}
+            </button>
+          </div>
+        </div>
+
+
+        <!-- Docentes (misma vista) -->
+        <div class="border rounded-md p-3 dark:border-gray-600">
+          <div class="font-medium mb-2">Asesor interno y revisores</div>
+
+          @if (gestionEquipoReadOnly || !puedeGestionarAsesorYRevisores(detallesProyecto)) {
+          <div class="text-sm text-amber-600 mb-3">
+            Solo es posible MODIFICAR asesor interno y revisores cuando el proyecto está en 'En curso' (7). En estado 6
+            se asignan desde el botón de asignación.
+          </div>
+          }
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <div class="text-sm font-medium mb-1">Asesor interno</div>
+
+              <p-select [options]="docentesOptions" optionLabel="label" optionValue="value"
+                [(ngModel)]="gestionAsesorId" placeholder="Busca asesor interno" class="w-full" appendTo="body"
+                [filter]="true" filterBy="label" [showClear]="true"
+                [disabled]="gestionEquipoReadOnly || !puedeGestionarAsesorYRevisores(detallesProyecto)">
+              </p-select>
+
+              <!-- Sustitución de asesor -->
+              @if (canSustituirDocente && gestionAsesorId && puedeGestionarAsesorYRevisores(detallesProyecto)) {
+              <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 p-3">
+                <div class="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-2 uppercase tracking-wide flex items-center gap-1">
+                  <i class="pi pi-refresh text-[10px]"></i> Sustituir asesor por baja
+                </div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                  Actual: <span class="font-medium text-slate-700 dark:text-slate-300">{{ docentesOptions | findLabel:gestionAsesorId }}</span>
+                </div>
+                <p-select [options]="docentesOptions" optionLabel="label" optionValue="value"
+                  [(ngModel)]="sustitucionDocenteEntraId"
+                  placeholder="Selecciona el docente entrante"
+                  class="w-full" appendTo="body"
+                  [filter]="true" filterBy="label" [showClear]="true">
+                </p-select>
+                <textarea
+                  [(ngModel)]="sustitucionMotivo"
+                  rows="2"
+                  placeholder="Motivo (opcional): Baja definitiva, conflicto de horario..."
+                  class="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-xs dark:border-gray-600 dark:bg-gray-800 dark:text-white resize-none">
+                </textarea>
+                <div class="flex justify-end mt-2">
+                  <button type="button"
+                    class="inline-flex items-center gap-1 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white py-1.5 px-3 rounded-md text-xs font-medium"
+                    [disabled]="sustitucionSaving || !sustitucionDocenteEntraId"
+                    (click)="sustituirAsesorDesdeGestion()">
+                    <i class="pi pi-check text-[10px]"></i>
+                    {{ sustitucionSaving ? 'Guardando...' : 'Confirmar sustitución' }}
+                  </button>
+                </div>
+              </div>
+              }
+            </div>
+
+            @if (gestionAsesorId) {
+            <div class="text-xs text-gray-500 mt-2">
+              {{ getDocenteCargaTexto(gestionAsesorId) }}
+            </div>
+            }
+
+            <div>
+              <div class="text-sm font-medium mb-1">Revisores</div>
+
+              <p-multiSelect [options]="docentesOptions" optionLabel="label" optionValue="value"
+                [(ngModel)]="gestionRevisoresIds" defaultLabel="Busca y selecciona revisores" class="w-full"
+                appendTo="body" [filter]="true" filterBy="label"
+                [disabled]="gestionEquipoReadOnly || !puedeGestionarAsesorYRevisores(detallesProyecto)">
+              </p-multiSelect>
+
+              <div class="text-xs text-gray-500 mt-2">
+                Seleccionados: <b>{{ (gestionRevisoresIds.length || 0) }}</b>
+              </div>
+
+              <!-- Sustitución de revisores -->
+              @if (canSustituirDocente && gestionRevisoresIds.length > 0 && puedeGestionarAsesorYRevisores(detallesProyecto)) {
+              <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 p-3">
+                <div class="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-2 uppercase tracking-wide flex items-center gap-1">
+                  <i class="pi pi-refresh text-[10px]"></i> Sustituir revisor por baja
+                </div>
+                <div class="mb-2">
+                  <div class="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Revisor a sustituir</div>
+                  <p-select [options]="docentesOptions | filterIds:gestionRevisoresIds" optionLabel="label" optionValue="value"
+                    [(ngModel)]="sustitucionDocenteSaleId"
+                    placeholder="Selecciona el revisor que sale"
+                    class="w-full" appendTo="body"
+                    [filter]="true" filterBy="label" [showClear]="true"
+                    (ngModelChange)="sustitucionDocenteEntraId = null">
+                  </p-select>
+                </div>
+                @if (sustitucionDocenteSaleId) {
+                <div class="mb-2">
+                  <div class="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Nuevo revisor</div>
+                  <p-select [options]="docentesOptions" optionLabel="label" optionValue="value"
+                    [(ngModel)]="sustitucionDocenteEntraId"
+                    placeholder="Selecciona el docente entrante"
+                    class="w-full" appendTo="body"
+                    [filter]="true" filterBy="label" [showClear]="true">
+                  </p-select>
+                </div>
+                }
+                <textarea
+                  [(ngModel)]="sustitucionMotivo"
+                  rows="2"
+                  placeholder="Motivo (opcional): Baja definitiva, conflicto de horario..."
+                  class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-xs dark:border-gray-600 dark:bg-gray-800 dark:text-white resize-none">
+                </textarea>
+                <div class="flex justify-end mt-2">
+                  <button type="button"
+                    class="inline-flex items-center gap-1 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white py-1.5 px-3 rounded-md text-xs font-medium"
+                    [disabled]="sustitucionSaving || !sustitucionDocenteEntraId || !sustitucionDocenteSaleId"
+                    (click)="sustituirRevisorDesdeGestion()">
+                    <i class="pi pi-check text-[10px]"></i>
+                    {{ sustitucionSaving ? 'Guardando...' : 'Confirmar sustitución' }}
+                  </button>
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 mt-3">
+            <button type="button" class="bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 rounded-md"
+              (click)="guardarDocentesResidenciaGestion()"
+              [disabled]="gestionDocentesSaving || gestionEquipoReadOnly || !puedeGestionarAsesorYRevisores(detallesProyecto)">
+              {{ gestionDocentesSaving ? 'Guardando...' : 'Guardar' }}
+            </button>
+          </div>
+        </div>
+
+
+
+      </div>
+    </p-dialog>
+
+  <!-- ── Diálogo de sustitución de docente (se mantiene para flujo desde detalles) ── -->
+  <p-dialog
+    header="Sustitución de {{ sustitucionTipoLabel }}"
+    [(visible)]="showSustitucionDialog"
+    [modal]="true"
+    [draggable]="false"
+    [dismissableMask]="true"
+    [style]="{ width: '95%', maxWidth: '520px' }">
+
+    <div class="flex flex-col gap-4 pt-2">
+
+      <div class="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 p-3 text-sm">
+        <div class="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1 uppercase tracking-wide">
+          Docente a sustituir
+        </div>
+        <div class="font-medium text-slate-800 dark:text-white">{{ sustitucionDocenteSaleNombre }}</div>
+        <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Rol: {{ sustitucionTipoLabel }}</div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">
+          Nuevo {{ sustitucionTipoLabel }} <span class="text-red-500">*</span>
+        </label>
+        <p-select
+          [options]="docentesOptions"
+          optionLabel="label"
+          optionValue="value"
+          [(ngModel)]="sustitucionDocenteEntraId"
+          placeholder="Selecciona el docente entrante"
+          class="w-full"
+          appendTo="body"
+          [filter]="true"
+          filterBy="label"
+          [showClear]="true">
+        </p-select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">
+          Motivo <span class="text-xs text-slate-400 font-normal">(opcional)</span>
+        </label>
+        <textarea
+          [(ngModel)]="sustitucionMotivo"
+          rows="3"
+          placeholder="Ej: Baja definitiva, conflicto de horario, etc."
+          class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white resize-none">
+        </textarea>
+      </div>
+
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-end gap-2">
+        <button type="button"
+          class="bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-white py-2 px-4 rounded-md text-sm"
+          (click)="showSustitucionDialog = false"
+          [disabled]="sustitucionSaving">
+          Cancelar
+        </button>
+        <button type="button"
+          class="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded-md text-sm disabled:opacity-60"
+          (click)="confirmarSustitucion()"
+          [disabled]="sustitucionSaving || !sustitucionDocenteEntraId">
+          {{ sustitucionSaving ? 'Guardando...' : 'Confirmar sustitución' }}
+        </button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  </div>
+</div>

@@ -1,0 +1,60 @@
+<p-drawer [(visible)]="visible" [closable]="false">
+    <ng-template #header>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 p-4">
+            <!-- Avatar -->
+            <p-avatar [label]="(user?.nombre?.[0] || user?.correo?.[0] || '?')" shape="circle" size="large">
+            </p-avatar>
+
+            <!-- Nombre y Rol -->
+            <div class="text-center sm:text-left">
+                <!-- Nombre completo -->
+                <span class="font-bold block">
+                    {{ user?.nombre || '' }} {{ user?.apellidoPaterno || '' }}
+                </span>
+
+                <!-- Selector de rol -->
+                <p-select [ngModel]="rolSeleccionado" (ngModelChange)="onRolChange($event)" [options]="roles"
+                    optionLabel="descripcion" size="small" placeholder="Perfil" class="mt-2">
+                </p-select>
+            </div>
+        </div>
+    </ng-template>
+
+
+    <ng-template #content>
+
+        <div class="card flex justify-center">
+            @if (renderMenu) {
+            <p-panelmenu [model]="items" class="w-full md:w-80"></p-panelmenu>
+            }
+
+        </div>
+    </ng-template>
+    <ng-template #footer>
+        <div>
+            <button pButton label="Mi Perfil" (click)="navCambioContra()" icon="pi pi-user" class="w-full"
+                outlined></button>
+            <button pButton (click)="logout()" label="Cerrar Sesión" icon="pi pi-sign-out" class="w-full"
+                severity="danger" text></button>
+        </div>
+
+        <button (click)="visible = false"
+            class="bottom-5 left-5 z-100 flex items-center justify-center rounded-full bg-slate-900 text-white shadow-lg w-12 h-12 hover:bg-slate-800 transition-all duration-500 ease-in-out transform hover:scale-110"
+            title="Cerrar Sidebar">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 stroke-white" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </ng-template>
+</p-drawer>
+@if(!visible){
+<button (click)="visible = true"
+    class="fixed bottom-5 left-5 z-50 flex items-center justify-center rounded-full bg-slate-900 text-white shadow-lg w-12 h-12 hover:bg-slate-800 transition-all duration-500 ease-in-out transform hover:scale-110"
+    title="Mostrar Sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 stroke-white" fill="none" viewBox="0 0 24 24"
+        stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7" />
+    </svg>
+</button>
+}

@@ -1,0 +1,293 @@
+<p-toast position="top-right"></p-toast>
+
+<div class="min-h-screen w-full flex flex-col dark:bg-gray-800 dark:text-white">
+  <div class="flex-1 flex flex-col p-4">
+
+    <!-- Título + botón Agregar -->
+    <div class="flex items-center justify-between px-6 pt-6 flex-wrap">
+      <h2 class="text-3xl font-bold text-slate-900 dark:text-white">Empresas</h2>
+
+      <button class="bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 rounded-md shadow-md mt-2 sm:mt-0"
+        (click)="openAddDialog()">
+        Agregar Empresa
+      </button>
+    </div>
+
+    <!-- Tabla de Empresas -->
+    <div class="overflow-x-auto p-6 dark:bg-gray-700 shadow-md rounded-md mb-6 mt-4">
+      <h2 class="text-xl font-semibold mb-4">Empresas</h2>
+
+      <p-table #dt [value]="empresas" [tableStyle]="{ 'min-width': '50rem' }" class="dark:bg-gray-700" dataKey="id"
+        [rowHover]="true" [rows]="10" [showCurrentPageReport]="true" [rowsPerPageOptions]="[10, 25, 50]"
+        [paginator]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}" [filterDelay]="0"
+        [globalFilterFields]="['nombre', 'rfc', 'email', 'telefono']">
+
+        <ng-template #caption>
+          <div class="flex justify-between items-center gap-3">
+            <p-button [outlined]="true" icon="pi pi-filter-slash" label="Limpiar" (click)="clear(dt)" />
+            <input pInputText type="text" [(ngModel)]="searchValue" (input)="dt.filterGlobal(searchValue, 'contains')"
+              placeholder="Buscador" class="w-full sm:w-auto" />
+          </div>
+        </ng-template>
+
+        <ng-template pTemplate="header">
+          <tr>
+            <th class="px-4 py-2 text-left">
+              Nombre
+              <p-columnFilter type="text" field="nombre" display="menu" />
+            </th>
+            <th class="px-4 py-2 text-left">
+              RFC
+              <p-columnFilter type="text" field="rfc" display="menu" />
+            </th>
+            <th class="px-4 py-2 text-left">
+              Teléfono
+              <p-columnFilter type="text" field="telefono" display="menu" />
+            </th>
+            <th class="px-4 py-2 text-left">
+              Correo
+              <p-columnFilter type="text" field="email" display="menu" />
+            </th>
+            <th class="px-4 py-2 text-left">Acciones</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-row>
+          <tr>
+            <td class="px-4 py-2 dark:bg-gray-700">{{ row.nombre }}</td>
+            <td class="px-4 py-2 dark:bg-gray-700">{{ row.rfc }}</td>
+            <td class="px-4 py-2 dark:bg-gray-700">{{ row.telefono }}</td>
+            <td class="px-4 py-2 dark:bg-gray-700">{{ row.email }}</td>
+            <td class="px-4 py-2 dark:bg-gray-700 flex gap-2">
+              <button class="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded-md shadow-md"
+                (click)="openEditDialog(row)">
+                Editar
+              </button>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- D I Á L O G O Agregar/Editar Empresa -->
+    <p-dialog [(visible)]="showDialog" [modal]="true" [blockScroll]="true" [draggable]="false" [resizable]="false"
+      [dismissableMask]="true" [style]="{ width: '90%', maxWidth: '95vw' }" (onHide)="onDialogHide()">
+
+      <ng-template pTemplate="header">
+        <div class="text-xl font-semibold">
+          {{ dialogMode === 'edit' ? 'Editar Empresa' : 'Agregar Empresa' }}
+        </div>
+      </ng-template>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="mt-2">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+    <!-- Nombre -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre</label>
+      <input type="text" formControlName="nombre"
+        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+
+      @if(f['nombre'].invalid && (submitted || f['nombre'].dirty || f['nombre'].touched)) {
+        @if(f['nombre'].errors?.['required']) {
+          <small class="text-red-500">El nombre es obligatorio.</small>
+        }
+      }
+    </div>
+
+    <!-- RFC -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">RFC</label>
+      <input type="text" formControlName="rfc" maxlength="13" (input)="onRfcInput()"
+        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+
+      @if(f['rfc'].invalid && (submitted || f['rfc'].dirty || f['rfc'].touched)) {
+        @if(f['rfc'].errors?.['required']) {
+          <small class="text-red-500">El RFC es obligatorio.</small>
+        }
+        @if(f['rfc'].errors?.['pattern']) {
+          <small class="text-red-500">El RFC no tiene un formato válido.</small>
+        }
+      }
+    </div>
+
+    <!-- Teléfono -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Teléfono</label>
+      <input type="tel" formControlName="telefono" inputmode="numeric" maxlength="10"
+        (input)="digitsOnly('telefono', 10)"
+        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+
+      @if(f['telefono'].invalid && (submitted || f['telefono'].dirty || f['telefono'].touched)) {
+        @if(f['telefono'].errors?.['required']) {
+          <small class="text-red-500">El teléfono es obligatorio.</small>
+        }
+        @if(f['telefono'].errors?.['pattern']) {
+          <small class="text-red-500">Debe contener exactamente 10 dígitos.</small>
+        }
+      }
+    </div>
+
+    <!-- Correo -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Correo</label>
+      <input type="email" formControlName="email" (blur)="onEmailBlur()"
+        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+
+      @if(f['email'].invalid && (submitted || f['email'].dirty || f['email'].touched)) {
+        @if(f['email'].errors?.['required']) {
+          <small class="text-red-500">El correo es obligatorio.</small>
+        }
+        @if(f['email'].errors?.['email']) {
+          <small class="text-red-500">El correo no tiene un formato válido.</small>
+        }
+      }
+    </div>
+
+    <!-- Giro -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Giro</label>
+      <input type="text" formControlName="giro"
+        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+
+      @if(f['giro'].invalid && (submitted || f['giro'].dirty || f['giro'].touched)) {
+        @if(f['giro'].errors?.['required']) {
+          <small class="text-red-500">El giro es obligatorio.</small>
+        }
+      }
+    </div>
+
+    <!-- Misión -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Misión</label>
+      <textarea formControlName="mision" rows="2"
+        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"></textarea>
+
+      @if(f['mision'].invalid && (submitted || f['mision'].dirty || f['mision'].touched)) {
+        @if(f['mision'].errors?.['required']) {
+          <small class="text-red-500">La misión es obligatoria.</small>
+        }
+      }
+    </div>
+
+    <!-- Domicilio -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Domicilio</label>
+      <input type="text" formControlName="domicilio"
+        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+
+      @if(f['domicilio'].invalid && (submitted || f['domicilio'].dirty || f['domicilio'].touched)) {
+        @if(f['domicilio'].errors?.['required']) {
+          <small class="text-red-500">El domicilio es obligatorio.</small>
+        }
+      }
+    </div>
+
+    <!-- CP -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">CP</label>
+      <input type="tel" formControlName="cp" inputmode="numeric" maxlength="5"
+        (input)="digitsOnly('cp', 5)" (blur)="onCpBlur()"
+        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+
+      @if(f['cp'].invalid && (submitted || f['cp'].dirty || f['cp'].touched)) {
+        @if(f['cp'].errors?.['required']) {
+          <small class="text-red-500">El código postal es obligatorio.</small>
+        }
+        @if(f['cp'].errors?.['pattern']) {
+          <small class="text-red-500">El código postal debe tener exactamente 5 dígitos.</small>
+        }
+      }
+    </div>
+
+    <!-- Estado (solo lectura) -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Estado</label>
+      <input type="text" [value]="estadoTexto"
+        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
+        readonly />
+      <!-- Estado se llena por CP; si quieres validación real, valida cp/colonia -->
+    </div>
+
+    <!-- Municipio (solo lectura) -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Municipio</label>
+      <input type="text" [value]="municipioTexto"
+        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
+        readonly />
+    </div>
+
+    <!-- Colonia -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Colonia</label>
+
+      <p-select formControlName="colonia" [options]="coloniasCp" optionLabel="colonia" optionValue="colonia_id"
+        [placeholder]="loadingColonias ? 'Cargando colonias...' : 'Seleccione una colonia'"
+        [filter]="true" [showClear]="true"
+        class="mt-1 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md">
+      </p-select>
+
+      @if(f['colonia'].invalid && (submitted || f['colonia'].dirty || f['colonia'].touched)) {
+        @if(f['colonia'].errors?.['required']) {
+          <small class="text-red-500">Selecciona una colonia.</small>
+        }
+      }
+    </div>
+
+    <!-- Ciudad -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ciudad</label>
+      <input type="text" formControlName="ciudad"
+        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+
+      @if(f['ciudad'].invalid && (submitted || f['ciudad'].dirty || f['ciudad'].touched)) {
+        @if(f['ciudad'].errors?.['required']) {
+          <small class="text-red-500">La ciudad es obligatoria.</small>
+        }
+      }
+    </div>
+
+    <!-- Titular -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Titular</label>
+      <input type="text" formControlName="titular"
+        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+
+      @if(f['titular'].invalid && (submitted || f['titular'].dirty || f['titular'].touched)) {
+        @if(f['titular'].errors?.['required']) {
+          <small class="text-red-500">El titular es obligatorio.</small>
+        }
+      }
+    </div>
+
+    <!-- Puesto del Titular -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Puesto del Titular</label>
+      <input type="text" formControlName="puestoTitular"
+        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+
+      @if(f['puestoTitular'].invalid && (submitted || f['puestoTitular'].dirty || f['puestoTitular'].touched)) {
+        @if(f['puestoTitular'].errors?.['required']) {
+          <small class="text-red-500">El puesto del titular es obligatorio.</small>
+        }
+      }
+    </div>
+
+  </div>
+
+  <div class="md:col-span-2 flex justify-between mt-6">
+    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md shadow-md">
+      {{ isEditing() ? 'Actualizar Empresa' : 'Agregar Empresa' }}
+    </button>
+
+    <button type="button" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md shadow-md"
+      (click)="cancelarEdicion(); showDialog=false;">
+      Cancelar
+    </button>
+  </div>
+</form>
+
+    </p-dialog>
+
+  </div>
+</div>

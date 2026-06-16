@@ -1,0 +1,706 @@
+<p-toast position="top-right"></p-toast>
+
+<div class="min-h-screen w-full flex flex-col bg-white dark:bg-gray-800 text-black dark:text-white">
+
+    @if(!canReadPerfil) {
+    <div class="p-6">
+        <div class="bg-red-100 text-red-700 px-4 py-3 rounded">
+            No tienes permisos para ver el perfil.
+        </div>
+    </div>
+    }
+    @else {
+
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 pt-6 flex-wrap gap-4">
+        <div class="mt-2 text-sm text-slate-600 dark:text-slate-300 flex flex-col gap-1">
+            <div>
+                Perfil activo:
+                <span class="font-semibold">
+                    @if(isEstudiante){ Estudiante }
+                    @else if(isDocente){ Docente }
+                    @else { Usuario }
+                </span>
+            </div>
+
+            <div>
+                Correo institucional:
+                <span class="font-semibold">{{ correoInstitucionalHeader || '-' }}</span>
+
+
+            </div>
+        </div>
+
+
+        <!-- Botones -->
+        @if(canEditPerfil && !editMode && !loading) {
+        <button class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md shadow-md"
+            (click)="entrarModoEdicion()">
+            Editar
+        </button>
+        }
+
+        @if(canEditPerfil && editMode) {
+        <div class="flex gap-2">
+            <button class="bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 rounded-md shadow-md"
+                (click)="guardar()">
+                Guardar
+            </button>
+            <button class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md shadow-md"
+                (click)="cancelarEdicion()">
+                Cancelar
+            </button>
+        </div>
+        }
+    </div>
+
+    <!-- Loading -->
+    @if(loading) {
+    <div class="p-6">
+        <div class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-6">
+            <div class="text-slate-500 dark:text-slate-300">
+                Cargando perfil...
+            </div>
+        </div>
+    </div>
+    }
+    @else {
+
+    <form class="p-6 space-y-4" [formGroup]="form">
+
+        <!-- ===================== DATOS GENERALES (siempre) ===================== -->
+        <div class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-6">
+            <h3 class="text-xl font-semibold mb-4">Datos generales</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre</label>
+                    @if(editMode) {
+                    <input type="text" formControlName="nombre"
+                        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md" />
+                    } @else {
+                    <div class="mt-2 font-semibold">{{ form.get('nombre')?.value || '-' }}</div>
+                    }
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Apellidos</label>
+                    @if(editMode) {
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" formControlName="apellidoPaterno"
+                            class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md" />
+                        <input type="text" formControlName="apellidoMaterno"
+                            class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md" />
+                    </div>
+                    } @else {
+                    <div class="mt-2 font-semibold">
+                        {{ form.get('apellidoPaterno')?.value || '' }} {{ form.get('apellidoMaterno')?.value || '' }}
+                    </div>
+                    }
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Correo
+                        institucional</label>
+
+                    @if(editMode) {
+                    <input type="email" formControlName="correoInstitucional"
+                        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md" />
+
+                    @if(isInvalid('correoInstitucional')) {
+                    <small class="text-red-500">Formato de correo institucional no válido.</small>
+                    } @else if(isValidTyped('correoInstitucional')) {
+                    <small class="text-emerald-500">Formato válido ✅</small>
+                    }
+                    }@else{
+                    <div class="mt-2 font-semibold">
+                        {{ form.get('correoInstitucional')?.value || '' }}
+                    </div>
+                    }
+
+                </div>
+
+            </div>
+        </div>
+
+
+        <!-- ===================== ALUMNO: NO. CONTROL + CARRERA ===================== -->
+        @if(isEstudiante) {
+        <div class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-6">
+            <h3 class="text-xl font-semibold mb-4">Datos de alumno</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <div>
+                    <div class="text-slate-500 dark:text-slate-300 text-sm">No. control</div>
+                    <div class="mt-1 font-semibold">{{ form.get('noControl')?.value || '-' }}</div>
+                </div>
+
+                <div>
+                    <div class="text-slate-500 dark:text-slate-300 text-sm">Carrera</div>
+
+                    @if(editMode) {
+                    <p-select class="mt-1 block w-full" styleClass="w-full" [options]="carreras"
+                        optionLabel="descripcion" optionValue="id" placeholder="Selecciona una carrera"
+                        formControlName="carrera">
+                    </p-select>
+                    } @else {
+                    <div class="mt-1 font-semibold">{{ carreraTexto() }}</div>
+                    }
+                </div>
+
+            </div>
+        </div>
+        }
+
+        <!-- ===================== ESTUDIANTE: CONTACTO Y DIRECCIÓN ===================== -->
+        @if(isEstudiante) {
+        <div class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-6">
+            <h3 class="text-xl font-semibold mb-4">Contacto y dirección</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <!-- Correo personal -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Correo personal</label>
+
+                    @if(editMode) {
+                    <input type="email" formControlName="correoPersonal"
+                        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md" />
+
+                    @if(isInvalid('correoPersonal')) {
+                    <small class="text-red-500">Formato de correo no válido.</small>
+                    } @else if(isValidTyped('correoPersonal')) {
+                    <small class="text-emerald-500">Formato válido ✅</small>
+                    }
+                    }@else{
+                    <div class="mt-2 font-semibold">{{ form.get('correoPersonal')?.value || '-' }}</div>
+                    }
+
+                </div>
+
+                <!-- Teléfono -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Teléfono</label>
+
+                    @if(editMode) {
+                    <input type="tel" inputmode="numeric" maxlength="10" formControlName="telefonoCelular"
+                        (input)="digitsOnly('telefonoCelular', 10)"
+                        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md" />
+
+                    @if(isInvalid('telefonoCelular')) {
+                    <small class="text-red-500">Debe contener 10 dígitos.</small>
+                    } @else if(isValidTyped('telefonoCelular')) {
+                    <small class="text-emerald-500">Formato válido ✅</small>
+                    }
+                    }@else{
+                    <div class="mt-2 font-semibold">{{ form.get('telefonoCelular')?.value || '-' }}</div>
+                    }
+
+                </div>
+
+                <!-- Domicilio -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Domicilio</label>
+                    @if(editMode) {
+                    <input type="text" formControlName="domicilio"
+                        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md" />
+                    } @else {
+                    <div class="mt-2 font-semibold">{{ form.get('domicilio')?.value || '-' }}</div>
+                    }
+                </div>
+
+                <!-- Ciudad -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ciudad</label>
+                    @if(editMode) {
+                    <input type="text" formControlName="ciudad"
+                        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md" />
+                    } @else {
+                    <div class="mt-2 font-semibold">{{ form.get('ciudad')?.value || '-' }}</div>
+                    }
+                </div>
+
+                <!-- CP -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Código Postal</label>
+
+                    @if(editMode) {
+                    <input type="text" inputmode="numeric" maxlength="5" formControlName="cp" (input)="onCpInput()"
+                        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md"
+                        placeholder="Ej. 97100" />
+
+                    @if(cpLookupLoading) {
+                    <div class="mt-2 text-sm text-slate-500 dark:text-slate-300">Consultando CP...</div>
+                    }
+
+                    @if(cpLookupError) {
+                    <small class="text-red-500">{{ cpLookupError }}</small>
+                    }
+                    } @else {
+                    <div class="mt-2 font-semibold">{{ form.get('cp')?.value || '-' }}</div>
+                    }
+                </div>
+
+                <!-- Estado (derivado) -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Estado</label>
+                    <div class="mt-2 font-semibold">{{ estadoTexto() }}</div>
+                </div>
+
+                <!-- Municipio (derivado) -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Municipio</label>
+                    <div class="mt-2 font-semibold">{{ municipioTexto() }}</div>
+                </div>
+
+
+                <!-- Dependencia médica -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Dependencia médica</label>
+
+                    @if(editMode) {
+                    <p-select class="mt-1 block w-full" styleClass="w-full" [options]="dependenciaMedica"
+                        optionLabel="descripcion" optionValue="id" placeholder="Selecciona una dependencia"
+                        formControlName="dependenciaMedica">
+                    </p-select>
+                    } @else {
+                    <div class="mt-2 font-semibold">{{ dependenciaTexto() }}</div>
+                    }
+                </div>
+
+                <!-- NSS -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">No. Seguro Social</label>
+
+                    @if(editMode) {
+                    <input type="text" formControlName="noSeguroSocial"
+                        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md" />
+                    } @else {
+                    <div class="mt-2 font-semibold">{{ form.get('noSeguroSocial')?.value || '-' }}</div>
+                    }
+                </div>
+
+            </div>
+        </div>
+        }
+
+        <!-- ===================== DOCENTE: SOLO TELÉFONO (según interface) ===================== -->
+        @if(isDocente) {
+        <div class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-6">
+            <h3 class="text-xl font-semibold mb-4">Datos de docente</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">RFC</label>
+                    @if(editMode) {
+                    <input type="text" formControlName="rfc"
+                        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md" />
+
+                    @if(isInvalid('rfc')) {
+                    <small class="text-red-500">RFC no válido (verifica formato).</small>
+                    } @else if(isValidTyped('rfc')) {
+                    <small class="text-emerald-500">Formato válido ✅</small>
+                    }
+                    }
+
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Teléfono</label>
+                    @if(editMode) {
+                    <input type="text" formControlName="telefono" (input)="digitsOnly('telefono', 10)"
+                        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md" />
+
+                    @if(isInvalid('telefono')) {
+                    <small class="text-red-500">Debe contener 10 dígitos.</small>
+                    } @else if(isValidTyped('telefono')) {
+                    <small class="text-emerald-500">Formato válido ✅</small>
+                    }
+                    }
+
+                </div>
+            </div>
+        </div>
+        }
+
+
+        <!-- ===================== CONTACTO DE EMERGENCIA (solo estudiante) ===================== -->
+        @if(isEstudiante) {
+        <div class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-6">
+            <h3 class="text-xl font-semibold mb-4">Contacto de emergencia</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre</label>
+                    @if(editMode) {
+                    <input type="text" formControlName="nombreContacto"
+                        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md" />
+                    } @else {
+                    <div class="mt-2 font-semibold">{{ form.get('nombreContacto')?.value || '-' }}</div>
+                    }
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Parentesco</label>
+                    @if(editMode) {
+                    <p-select class="mt-1 block w-full" styleClass="w-full" [options]="parentescos"
+                        placeholder="Selecciona un parentesco" formControlName="parentesco">
+                        <ng-template pTemplate="item" let-option>{{ option }}</ng-template>
+                        <ng-template pTemplate="selectedItem" let-value>{{ value || 'Selecciona un parentesco'
+                            }}</ng-template>
+                    </p-select>
+                    } @else {
+                    <div class="mt-2 font-semibold">{{ form.get('parentesco')?.value || '-' }}</div>
+                    }
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Domicilio</label>
+                    @if(editMode) {
+                    <input type="text" formControlName="domicilioContacto"
+                        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md" />
+                    } @else {
+                    <div class="mt-2 font-semibold">{{ form.get('domicilioContacto')?.value || '-' }}</div>
+                    }
+                </div>
+
+                <!-- Teléfono -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Teléfono</label>
+
+                    @if (editMode) {
+                    <input type="tel" inputmode="numeric" maxlength="10" formControlName="telefonoContacto"
+                        (input)="digitsOnly('telefonoContacto', 10)"
+                        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md" />
+
+                    @if (isInvalid('telefonoContacto')) {
+                    <small class="text-red-500">Debe contener 10 dígitos.</small>
+                    } @else if (isValidTyped('telefonoContacto')) {
+                    <small class="text-emerald-500">Formato válido ✅</small>
+                    }
+                    } @else {
+                    <div class="mt-2 font-semibold">{{ form.get('telefonoContacto')?.value || '-' }}</div>
+                    }
+                </div>
+
+                <!-- Email -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+
+                    @if (editMode) {
+                    <input type="email" formControlName="emailContacto"
+                        class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md" />
+
+                    @if (isInvalid('emailContacto')) {
+                    <small class="text-red-500">Formato de correo no válido.</small>
+                    } @else if (isValidTyped('emailContacto')) {
+                    <small class="text-emerald-500">Formato válido ✅</small>
+                    }
+                    } @else {
+                    <div class="mt-2 font-semibold">{{ form.get('emailContacto')?.value || '-' }}</div>
+                    }
+                </div>
+
+
+            </div>
+        </div>
+        }
+
+        <!-- ===================== EXPEDIENTE (solo estudiante) ===================== -->
+        @if(isEstudiante && estudiante?.idProyecto !== 0) {
+        <div class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-6">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                      <h3 class="text-xl font-semibold">Expediente</h3>
+
+                      <button *ngIf="algunoMarcado"
+                        (click)="generarPDFConsolidado()"
+                        [disabled]="generandoPdfConsolidado"
+                        class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium
+                               bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-colors
+                               disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="pi pi-file-pdf"></i>
+                        {{ generandoPdfConsolidado
+                            ? 'Generando PDF...'
+                            : 'Generar PDF (' + seleccionadosTipos.size + ' doc' + (seleccionadosTipos.size > 1 ? 's' : '') + ')' }}
+                      </button>
+                    </div>
+                    <p class="text-sm text-slate-500 dark:text-slate-300">
+                        Sube tus documentos (solo PDF). Si subes uno de nuevo, se reemplaza.
+                    </p>
+                </div>
+            </div>
+
+            @if(loadingExpediente) {
+            <div class="mt-4 text-slate-500 dark:text-slate-300">Cargando expediente...</div>
+            }
+            @else {
+            @if(tiposExpediente.length === 0) {
+            <div class="mt-4 text-slate-500 dark:text-slate-300">
+                No hay tipos de expediente disponibles.
+            </div>
+            }
+            @else {
+            <div class="mt-4 overflow-x-auto">
+
+                <p-dialog header="Visualizando PDF" [(visible)]="displayDialog" [modal]="true" [closable]="true"
+                    [style]="{width: '80vw'}">
+
+                    <ngx-extended-pdf-viewer *ngIf="pdfUrl" [src]="pdfUrl" height="75vh" [showToolbar]="true"
+                        [showSidebarButton]="false" [showFindButton]="false" [showOpenFileButton]="false"
+                        [showPrintButton]="false" [showDownloadButton]="true" [showPresentationModeButton]="false"
+                        [showRotateButton]="false" [showHandToolButton]="false" [showSpreadButton]="false"
+                        [showPropertiesButton]="false" [textLayer]="false" [showSecondaryToolbarButton]="false"
+                        [showStampEditor]="false" [showDrawEditor]="false" [showTextEditor]="false"
+                        [showHighlightEditor]="false">
+                    </ngx-extended-pdf-viewer>
+                </p-dialog>
+
+
+                <table class="w-full text-sm">
+                    <thead>
+  <tr class="text-left border-b border-slate-200/60 dark:border-slate-700/60">
+    <th class="py-2 pr-2 w-8">
+      <input type="checkbox"
+        class="w-4 h-4 rounded border-gray-300 text-indigo-600 cursor-pointer"
+        [checked]="todosMarcados"
+        (change)="toggleSeleccionTodos()"
+        title="Seleccionar todos los documentos cargados" />
+    </th>
+    <th class="py-2 pr-3">Tipo</th>
+    <th class="py-2 pr-3">Entrega</th>
+    <th class="py-2 pr-3">Revisión</th>
+    <th class="py-2 pr-3">Fecha</th>
+    <th class="py-2 pr-3">Archivo</th>
+    <th class="py-2 pr-3">Acciones</th>
+  </tr>
+</thead>
+
+                    <tbody>
+  @for (t of tiposExpediente; track t.id) {
+  @if (t.id !== 12) {
+  @let doc = expedienteMap[t.id];
+
+  <tr class="border-b border-slate-200/40 dark:border-slate-700/40"
+      [class.bg-indigo-50]="seleccionadosTipos.has(t.id)"
+      [class.dark:bg-indigo-900\/10]="seleccionadosTipos.has(t.id)">
+    <td class="py-3 pr-2">
+      <input type="checkbox"
+        class="w-4 h-4 rounded border-gray-300 text-indigo-600 cursor-pointer"
+        [checked]="seleccionadosTipos.has(t.id)"
+        [disabled]="!expedienteMap[t.id]"
+        (change)="toggleSeleccion(t.id)"
+        [title]="expedienteMap[t.id] ? 'Incluir en PDF consolidado' : 'Sin documento cargado'" />
+    </td>
+    <td class="py-3 pr-3">
+      <div class="font-semibold">{{ t.descripcion }}</div>
+      <div class="text-xs text-slate-500 dark:text-slate-300">Tipo #{{ t.id }}</div>
+    </td>
+
+    <td class="py-3 pr-3">
+      <span *ngIf="doc" class="px-2 py-1 rounded-full text-xs bg-emerald-100 text-emerald-700">
+        Cargado ✅
+      </span>
+      <span *ngIf="!doc" class="px-2 py-1 rounded-full text-xs bg-amber-100 text-amber-700">
+        Pendiente ⏳
+      </span>
+    </td>
+
+    <td class="py-3 pr-3">
+      @if (doc) {
+        <span class="px-2 py-1 rounded-full text-xs font-semibold"
+              [ngClass]="getEstadoRevisionClase(doc)">
+          {{ getEstadoRevisionTexto(doc) }}
+        </span>
+
+        @if (puedeVerMotivo(t.id)) {
+          <div class="mt-2">
+            <button type="button"
+              class="bg-red-600 hover:bg-red-700 text-white py-1 px-2 rounded-md text-xs shadow-md"
+              (click)="abrirDialogoRevision(doc)">
+              Ver motivo
+            </button>
+          </div>
+        }
+      } @else {
+        <span class="text-xs text-slate-400">Sin revisión</span>
+      }
+    </td>
+
+    <td class="py-3 pr-3">
+      {{ doc?.fechaSubida ? (doc?.fechaSubida | fechaEs:true) : '-' }}
+    </td>
+
+    <td class="py-3 pr-3">
+      @if (t.id === 11) {
+        @if (expedienteMap[11]?.urlExterna) {
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-1 rounded-full text-[11px] bg-emerald-100 text-emerald-700">Enlace</span>
+            <a class="text-sm text-emerald-700 hover:underline truncate max-w-[320px]"
+               [href]="expedienteMap[11]?.urlExterna"
+               target="_blank" rel="noopener">
+              {{ expedienteMap[11]?.urlExterna }}
+            </a>
+          </div>
+        } @else {
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-1 rounded-full text-[11px] bg-slate-200 text-slate-700">ZIP/RAR</span>
+            <div class="truncate max-w-[260px]">{{ expedienteMap[11]?.nombreOriginal || '-' }}</div>
+          </div>
+        }
+      } @else {
+        <div class="truncate max-w-[260px]">{{ expedienteMap[t.id]?.nombreOriginal || '-' }}</div>
+      }
+    </td>
+
+    <td class="py-3 pr-3">
+      @if (t.id === 11) {
+        <div>
+          <div class="flex gap-2 flex-wrap items-center mb-3">
+            <button *ngIf="expedienteMap[11]?.urlExterna"
+              type="button"
+              class="bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 rounded-md shadow-md"
+              (click)="abrirLinkCD()">
+              Abrir enlace
+            </button>
+
+            <button *ngIf="expedienteMap[11]?.urlExterna"
+              type="button"
+              class="bg-slate-700 hover:bg-slate-800 text-white py-2 px-3 rounded-md shadow-md"
+              (click)="copiarTexto(expedienteMap[11]?.urlExterna)">
+              Copiar
+            </button>
+
+            <button *ngIf="expedienteMap[11] && !expedienteMap[11]?.urlExterna"
+              type="button"
+              class="bg-slate-700 hover:bg-slate-800 text-white py-2 px-3 rounded-md shadow-md"
+              (click)="descargarArchivoExpediente(11)">
+              Descargar ZIP/RAR
+            </button>
+          </div>
+
+          <ng-container *ngIf="puedeEditarDocumento(11)">
+            <div class="flex gap-2 flex-wrap items-center mb-3">
+              <input type="text" #cdUrl
+                class="p-2 w-full md:w-[420px] border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md"
+                [value]="expedienteMap[11]?.urlExterna || ''"
+                placeholder="Pega enlace (Drive/Git/OneDrive/etc.)" />
+
+              <button type="button"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 rounded-md shadow-md"
+                (click)="guardarLinkCD(cdUrl.value)">
+                Guardar enlace
+              </button>
+            </div>
+
+            <input type="file"
+              accept=".zip,.rar,application/zip,application/vnd.rar"
+              [id]="'fileInput-12'"
+              hidden
+              (change)="onExpedienteFileSelected(11, $event)" />
+
+            <button type="button"
+              class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-md shadow-md"
+              (click)="onFileInputClick(11)">
+              <ng-container *ngIf="expedienteMap[11]">Reemplazar ZIP/RAR</ng-container>
+              <ng-container *ngIf="!expedienteMap[11]">Subir ZIP/RAR (≤ 300MB)</ng-container>
+            </button>
+          </ng-container>
+
+          @if (doc && isDocumentoEnRevision(doc)) {
+            <div class="mt-3 text-xs text-amber-600 font-semibold">
+              Documento en revisión. Espera el dictamen del jefe de vinculación.
+            </div>
+          }
+
+          
+        </div>
+      } @else {
+        <div class="flex flex-wrap gap-2 items-center">
+          <button *ngIf="doc && canPreviewPdf(t.id)"
+            type="button"
+            class="bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-3 rounded-md shadow-md"
+            (click)="viewExpediente(t.id)">
+            Ver
+          </button>
+
+          <ng-container *ngIf="puedeEditarDocumento(t.id)">
+            <input type="file"
+              accept="application/pdf,.pdf"
+              [id]="'fileInput-' + t.id"
+              hidden
+              (change)="onExpedienteFileSelected(t.id, $event)" />
+
+            <button type="button"
+              class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-md shadow-md"
+              (click)="onFileInputClick(t.id)">
+              <ng-container *ngIf="doc">Reemplazar</ng-container>
+              <ng-container *ngIf="!doc">Subir</ng-container>
+            </button>
+          </ng-container>
+
+          @if (doc && isDocumentoEnRevision(doc)) {
+            <span class="text-xs text-amber-600 font-semibold">
+              En revisión
+            </span>
+          }
+
+        </div>
+      }
+    </td>
+  </tr>
+  }
+  }
+</tbody>
+                </table>
+
+            </div>
+
+            }
+            }
+        </div>
+        }
+
+
+        <!-- ===================== SEGURIDAD (siempre) ===================== -->
+        <div class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-6">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                    <h3 class="text-xl font-semibold">Seguridad</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-300">
+                        Administra tu contraseña.
+                    </p>
+                </div>
+
+                @if(canEditPerfil) {
+                <button class="bg-amber-500 hover:bg-amber-600 text-white py-2 px-4 rounded-md shadow-md" type="button"
+                    (click)="abrirCambioPassword()">
+                    Cambiar contraseña
+                </button>
+                }
+            </div>
+        </div>
+
+    </form>
+
+    }
+    }
+
+    <p-dialog
+  [header]="revisionDialogTitulo"
+  [(visible)]="revisionDialogVisible"
+  [modal]="true"
+  [style]="{ width: '32rem' }"
+  (onHide)="cerrarDialogoRevision()">
+
+  <div class="text-sm whitespace-pre-line text-slate-700 dark:text-slate-200">
+    {{ revisionDialogMensaje || 'Sin observaciones.' }}
+  </div>
+</p-dialog>
+
+
+</div>

@@ -1,0 +1,250 @@
+<p-toast></p-toast>
+
+<!-- ── Dialog de confirmación de auto-asignación ────────────────────── -->
+<p-dialog [(visible)]="showConfirmDialog" [modal]="true" header="Confirmar asignación"
+  [style]="{ width: '420px' }" [closable]="!asignando">
+  <div *ngIf="proyectoSeleccionado" class="confirm-dialog-body">
+    <p>¿Confirmas asignarte como <strong>{{ rolLabel(rolSeleccionadoAutoAsign ?? '') }}</strong>
+       en el siguiente proyecto?</p>
+    <div class="confirm-proyecto-box">
+      <p class="confirm-titulo">{{ proyectoSeleccionado.titulo }}</p>
+      <p class="confirm-periodo">Periodo: {{ proyectoSeleccionado.periodoNombre ?? '—' }}</p>
+    </div>
+    <p class="confirm-nota">
+      Al confirmar se registrará tu asignación y se descargará automáticamente el oficio PDF.
+    </p>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton label="Cancelar" severity="secondary" [disabled]="asignando"
+      (click)="showConfirmDialog = false" class="mr-2"></button>
+    <button pButton [label]="asignando ? 'Procesando...' : 'Confirmar y descargar oficio'"
+      severity="success" [disabled]="asignando" (click)="confirmarAutoAsignacion()">
+    </button>
+  </ng-template>
+</p-dialog>
+
+<!-- ── Contenedor principal ─────────────────────────────────────────── -->
+<div class="dashboard-container">
+
+  <div class="dashboard-header">
+    <h2>Vinculación de Proyectos</h2>
+  </div>
+
+  <!-- ── Pestañas ─────────────────────────────────────────────────────── -->
+  <div class="tabs-container">
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'asignados'"
+      (click)="cambiarTab('asignados')">
+      Mis proyectos asignados
+    </button>
+
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'disponibles'"
+      (click)="cambiarTab('disponibles')">
+      Disponibles para asignarme
+      <span *ngIf="disponibles.length > 0" class="tab-badge">
+        {{ disponibles.length }}
+      </span>
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- Pestaña: Mis proyectos asignados                                  -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="activeTab === 'asignados'" class="tab-content">
+
+    <div class="toolbar">
+      <span class="toolbar-label">Filtrar por responsabilidad:</span>
+      <p-select
+        [options]="filtroRol"
+        optionLabel="label"
+        optionValue="value"
+        [(ngModel)]="rolSeleccionado"
+        (onChange)="onRolChange()"
+        placeholder="Selecciona"
+        styleClass="toolbar-select">
+      </p-select>
+    </div>
+
+    <div *ngIf="loading" class="loading-wrapper">
+      <p-progressSpinner></p-progressSpinner>
+    </div>
+
+    <div *ngIf="error" class="error-box">{{ error }}</div>
+
+    <p-table
+      *ngIf="!loading"
+      [value]="proyectos"
+      [paginator]="true"
+      [rows]="10"
+      [responsiveLayout]="'scroll'">
+
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Título</th>
+          <th>Responsabilidad</th>
+          <th>Estado</th>
+          <th>Inscripción</th>
+          <th style="width:160px;">Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>
+            <div class="proyecto-titulo">{{ row.titulo || '(Sin título)' }}</div>
+            <div class="proyecto-desc">{{ row.descripcion || '' }}</div>
+          </td>
+          <td>
+            <p-tag
+              [severity]="rolSeverityById(row.idTipoRelacion)"
+              [styleClass]="rolClassById(row.idTipoRelacion)"
+              [value]="row.tipoRelacionDescripcion">
+            </p-tag>
+          </td>
+          <td>
+            <p-tag
+              [severity]="estadoSeverityById(row.estadoId)"
+              [styleClass]="estadoClassById(row.estadoId)"
+              [value]="row.estadoDescripcion || 'Sin estado'">
+            </p-tag>
+          </td>
+          <td class="fecha-cell">
+            {{ toDate(row.fechaInscripcion) | date:'dd/MM/yyyy' }}
+          </td>
+          <td>
+            <button pButton icon="pi pi-external-link" (click)="verProyecto(row)" class="btn-abrir">
+              Abrir
+            </button>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="empty-msg">
+            No hay proyectos asignados con ese filtro.
+          </td>
+        </tr>
+      </ng-template>
+
+    </p-table>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- Pestaña: Disponibles para asignarme                               -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="activeTab === 'disponibles'" class="tab-content">
+
+    <!-- Banner: ya eligió su proyecto -->
+    <div *ngIf="yaAlcanceLimite" class="info-banner info-banner--success">
+      <i class="pi pi-check-circle info-banner__icon"></i>
+      <div>
+        <p class="info-banner__title">Ya elegiste tu proyecto</p>
+        <p class="info-banner__body">
+          Estás asignado como <strong>{{ rolLabel(rolYaElegido ?? '') }}</strong>
+          (proyecto #{{ proyectoYaElegidoId }}).
+          Distribución equitativa: {{ limitePorDocente }} proyecto(s) por docente (Round(n/x)).
+        </p>
+      </div>
+    </div>
+
+    <!-- Banner: aún puede elegir -->
+    <div *ngIf="!yaAlcanceLimite" class="info-banner info-banner--info">
+      <i class="pi pi-info-circle info-banner__icon"></i>
+      <div>
+        <p class="info-banner__title">Distribución equitativa</p>
+        <p class="info-banner__body">
+          Puedes elegir hasta <strong>{{ limitePorDocente }} proyecto(s)</strong> — como revisor de
+          anteproyecto (proyectos en revisión) o como asesor interno (proyectos en curso).
+          El oficio se genera automáticamente al confirmar.
+        </p>
+      </div>
+    </div>
+
+    <div *ngIf="loadingDisponibles" class="loading-wrapper">
+      <p-progressSpinner></p-progressSpinner>
+    </div>
+
+    <div *ngIf="!loadingDisponibles && disponibles.length === 0" class="empty-msg">
+      No hay proyectos disponibles en este momento.
+    </div>
+
+    <!-- Grid de cards -->
+    <div *ngIf="!loadingDisponibles && disponibles.length > 0" class="cards-grid">
+
+      <div *ngFor="let p of disponibles" class="proyecto-card">
+
+        <!-- Encabezado -->
+        <div class="card-header">
+          <div class="card-header__info">
+            <p class="card-titulo">{{ p.titulo ?? 'Sin título' }}</p>
+            <p class="card-meta">
+              {{ p.periodoNombre ?? 'Sin periodo' }} ·
+              {{ p.docentesAsignados }} docente(s) asignado(s)
+            </p>
+          </div>
+          <div class="card-tags">
+            <!-- Estado 3: necesita revisor de anteproyecto -->
+            <span *ngIf="p.idEstado === 3" class="estado-badge estado-badge--revisor">
+              <i class="pi pi-file-edit"></i> Revisor AP
+            </span>
+            <!-- Estado 6: necesita asesor interno -->
+            <span *ngIf="p.idEstado === 6" class="estado-badge estado-badge--asesor">
+              <i class="pi pi-user-plus"></i> Asesor interno
+            </span>
+          </div>
+        </div>
+
+        <!-- Descripción opcional -->
+        <p *ngIf="p.descripcion" class="card-descripcion">{{ p.descripcion }}</p>
+
+        <!-- Acciones -->
+        <div class="card-acciones">
+
+          <!-- Revisor de anteproyecto (estado 3) -->
+          <ng-container *ngIf="p.idEstado === 3">
+            <button *ngIf="!p.yoSoyElAsignado && !yaAlcanceLimite"
+              pButton
+              type="button"
+              label="Ser revisor de anteproyecto"
+              icon="pi pi-file-edit"
+              severity="warn"
+              class="w-full accion-btn"
+              (click)="abrirConfirm(p, 'REVISOR_ANTEPROYECTO')">
+            </button>
+            <div *ngIf="p.yoSoyElAsignado" class="ya-asignado ya-asignado--revisor">
+              <i class="pi pi-check"></i> Ya eres el revisor
+            </div>
+            <div *ngIf="!p.yoSoyElAsignado && yaAlcanceLimite" class="no-disponible">
+              No disponible (ya elegiste)
+            </div>
+          </ng-container>
+
+          <!-- Asesor interno (estado 6) -->
+          <ng-container *ngIf="p.idEstado === 6">
+            <button *ngIf="!p.yoSoyElAsignado && !yaAlcanceLimite"
+              pButton
+              type="button"
+              label="Ser asesor interno"
+              icon="pi pi-user-plus"
+              severity="success"
+              class="w-full accion-btn"
+              (click)="abrirConfirm(p, 'ASESOR_INTERNO')">
+            </button>
+            <div *ngIf="p.yoSoyElAsignado" class="ya-asignado ya-asignado--asesor">
+              <i class="pi pi-check"></i> Ya eres el asesor
+            </div>
+            <div *ngIf="!p.yoSoyElAsignado && yaAlcanceLimite" class="no-disponible">
+              No disponible (ya elegiste)
+            </div>
+          </ng-container>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

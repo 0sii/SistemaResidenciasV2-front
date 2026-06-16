@@ -1,0 +1,17 @@
+.etapa-uploader-basic input[type="file"] {
+    color: transparent !important;
+    font-size: 0 !important;
+    width: 0.1px !important;
+}
+
+.etapa-uploader-basic input[type="file"]::-webkit-file-upload-button {
+    visibility: hidden;
+}
+
+.etapa-uploader-basic input[type="file"]::file-selector-button {
+    visibility: hidden;
+}
+
+.etapa-uploader-basic .p-fileupload-filename {
+    display: none !important;
+}

@@ -1,0 +1,297 @@
+<p-toast position="top-right"></p-toast>
+
+<div class="min-h-screen w-full flex flex-col dark:bg-gray-800 dark:text-white">
+  <div class="flex-1 flex flex-col p-4">
+
+    <div class="flex items-center justify-between px-6 pt-6 flex-wrap">
+      <h2 class="text-3xl font-bold">Períodos Académicos</h2>
+
+      <button class="bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 rounded-md shadow-md"
+        (click)="openCreate()">
+        Agregar Período
+      </button>
+    </div>
+
+    <div class="overflow-x-auto p-6 bg-white dark:bg-gray-700 shadow-md rounded-md mt-4">
+      <p-table [value]="periodos" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]"
+        [globalFilterFields]="['nombre','jefeDepartamentoNombre']">
+
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Nombre</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>Estado</th>
+            <th>Jefe Depto.</th>
+            <th>Acciones</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-row>
+          <tr>
+            <td>{{ row.nombre }}</td>
+            <td>{{ row.fechaInicio | date:'dd MMMM yyyy' }}</td>
+            <td>{{ row.fechaFin | date:'dd MMMM yyyy' }}</td>
+            <td>
+              <span [ngClass]="getEstadoBadgeClass(row.activo)">
+                {{ row.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td>{{ row.jefeDepartamentoNombre || '—' }}</td>
+            <td>
+              <button class="bg-sky-600 hover:bg-sky-700 text-white py-1 px-3 rounded-md" (click)="openEdit(row)">
+                Editar
+              </button>
+            </td>
+          </tr>
+        </ng-template>
+
+      </p-table>
+    </div>
+
+    <!-- =======================
+         DIALOG CREAR
+         ======================= -->
+    <p-dialog [(visible)]="showCreateDialog" [modal]="true" [dismissableMask]="true"
+      [style]="{ width: '95%', maxWidth: '560px' }">
+
+      <ng-template pTemplate="header">
+        <div class="text-xl font-semibold">Agregar período académico</div>
+      </ng-template>
+
+      <form [formGroup]="createForm" class="mt-2">
+        <div class="flex flex-col gap-4">
+
+          <div>
+            <label class="block text-sm font-medium">
+              Nombre del período
+              <span class="ml-1 text-xs font-normal text-slate-400">(se genera automático con las fechas)</span>
+            </label>
+            <input type="text" formControlName="nombre" placeholder="Selecciona fechas de inicio y fin"
+              class="p-2 w-full border rounded-md dark:bg-gray-800 dark:border-gray-600" />
+            <small *ngIf="createSubmitted && createForm.get('nombre')?.invalid" class="text-red-500">
+              Requerido (mín. 5).
+            </small>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium">Fecha inicio</label>
+            <input type="date" formControlName="fechaInicio"
+              class="p-2 w-full border rounded-md dark:bg-gray-800 dark:border-gray-600" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium">Fecha fin</label>
+            <input type="date" formControlName="fechaFin"
+              class="p-2 w-full border rounded-md dark:bg-gray-800 dark:border-gray-600" />
+            <small
+              *ngIf="createForm.errors?.['fechaInvalida'] && (createSubmitted || createForm.get('fechaFin')?.touched)"
+              class="text-red-500">
+              La fecha fin no puede ser menor que la fecha inicio
+            </small>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium">Jefe(a) de Departamento</label>
+            <input type="text" formControlName="jefeDepartamentoNombre" placeholder="Nombre completo"
+              class="p-2 w-full border rounded-md dark:bg-gray-800 dark:border-gray-600" />
+            <small *ngIf="createSubmitted && createForm.get('jefeDepartamentoNombre')?.invalid" class="text-red-500">
+              Requerido (mín. 5).
+            </small>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <p-checkbox formControlName="activo" [binary]="true"></p-checkbox>
+            <span>Marcar como período activo</span>
+          </div>
+
+          <!-- Membrentado obligatorio al crear -->
+          <div class="border rounded-md p-3 dark:border-gray-600">
+            <div class="font-medium mb-2">Membrentado (PDF)</div>
+
+            <input #createMemInput type="file" accept="application/pdf" (change)="onCreateMemFileSelected($event)"
+              class="hidden" />
+            <button type="button" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md"
+              (click)="createMemInput.click()">
+              Elegir PDF
+            </button>
+
+            <div class="text-sm mt-2 text-gray-300" *ngIf="createMemFile">
+              Seleccionado: <b>{{ createMemFile.name }}</b>
+            </div>
+
+            <small *ngIf="createSubmitted && !createMemFile" class="text-red-500">
+              El membrentado es obligatorio al crear.
+            </small>
+          </div>
+
+          <div class="flex justify-end gap-2 mt-2">
+            <button type="button" class="bg-gray-500 text-white py-2 px-4 rounded-md" (click)="showCreateDialog=false"
+              [disabled]="creating">
+              Cancelar
+            </button>
+
+            <button type="button" class="bg-emerald-600 text-white py-2 px-4 rounded-md" [disabled]="creating"
+              (click)="submitCreate()">
+              {{ creating ? 'Guardando...' : 'Guardar' }}
+            </button>
+          </div>
+
+        </div>
+      </form>
+    </p-dialog>
+
+    <!-- =======================
+         DIALOG EDITAR
+         ======================= -->
+    <p-dialog [(visible)]="showEditDialog" [modal]="true" [dismissableMask]="true"
+      [style]="{ width: '95%', maxWidth: '760px' }">
+
+      <ng-template pTemplate="header">
+        <div class="text-xl font-semibold">Editar · {{ selectedPeriodo?.nombre }}</div>
+      </ng-template>
+
+      <div class="flex flex-col gap-4">
+
+        <!-- Form edición -->
+        <form [formGroup]="editForm" class="border rounded-md p-3 dark:border-gray-600">
+          <div class="font-medium mb-2">Datos del período</div>
+
+          <div class="grid grid-cols-1 gap-3">
+            <div>
+              <label class="block text-sm font-medium">
+                Nombre
+                <span class="ml-1 text-xs font-normal text-slate-400">(se actualiza automático al cambiar fechas)</span>
+              </label>
+              <input type="text" formControlName="nombre"
+                class="p-2 w-full border rounded-md dark:bg-gray-800 dark:border-gray-600" />
+              <small *ngIf="editSubmitted && editForm.get('nombre')?.invalid" class="text-red-500">
+                Requerido (mín. 5).
+              </small>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium">Inicio</label>
+                <input type="date" formControlName="fechaInicio"
+                  class="p-2 w-full border rounded-md dark:bg-gray-800 dark:border-gray-600" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium">Fin</label>
+                <input type="date" formControlName="fechaFin"
+                  class="p-2 w-full border rounded-md dark:bg-gray-800 dark:border-gray-600" />
+                <small
+                  *ngIf="editForm.errors?.['fechaInvalida'] && (editSubmitted || editForm.get('fechaFin')?.touched)"
+                  class="text-red-500">
+                  La fecha fin no puede ser menor que la fecha inicio
+                </small>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium">Jefe(a) de Departamento</label>
+              <input type="text" formControlName="jefeDepartamentoNombre"
+                class="p-2 w-full border rounded-md dark:bg-gray-800 dark:border-gray-600" />
+              <small *ngIf="editSubmitted && editForm.get('jefeDepartamentoNombre')?.invalid" class="text-red-500">
+                Requerido (mín. 5).
+              </small>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <p-checkbox formControlName="activo" [binary]="true"></p-checkbox>
+              <span>Activo</span>
+            </div>
+
+            <!-- Ajustar consecutivo (opcional) -->
+            <div class="border rounded-md p-3 dark:border-gray-600">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="font-medium">No. consecutivo de oficio</div>
+                  <div class="text-xs text-gray-400 mt-1">
+                    Úsalo para bajar el número si unos documentos salieron mal, o fijarlo a un valor específico.
+                  </div>
+                </div>
+
+              </div>
+
+              <div class="mt-3">
+                <label class="block text-sm font-medium">Nuevo valor del consecutivo</label>
+                <input type="number" min="1" formControlName="consecutivoOficio"
+                  class="p-2 w-full border rounded-md dark:bg-gray-800 dark:border-gray-600" />
+
+              </div>
+            </div>
+            <div class="flex justify-end">
+              <button type="button" class="bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 rounded-md"
+                [disabled]="savingEdit" (click)="saveEdit()">
+                {{ savingEdit ? 'Guardando...' : 'Guardar cambios' }}
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- Membrentado -->
+        <div class="border rounded-md p-3 dark:border-gray-600">
+          <div class="font-medium mb-2">Membrentado (PDF)</div>
+
+          @if (memMetaLoading) {
+          <div class="text-gray-500">Cargando...</div>
+          } @else {
+          <div class="text-sm">
+            <div *ngIf="memExists"><b>Archivo:</b> {{ memFileName }}</div>
+            <div *ngIf="memExists"><b>Subido:</b> {{ memUploadedAt }}</div>
+            <div *ngIf="!memExists" class="text-gray-400">Sin membrentado cargado.</div>
+          </div>
+          }
+
+          <div class="mt-3">
+            <input #memInput type="file" accept="application/pdf" (change)="onMemFileSelected($event)" class="hidden" />
+
+            <button class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md" type="button"
+              (click)="memInput.click()">
+              Elegir archivo
+            </button>
+
+            <div class="flex gap-2 mt-3 flex-wrap">
+              <button class="bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 rounded-md"
+                (click)="uploadMembrentado()">
+                {{ memUploading ? 'Subiendo...' : 'Subir / Reemplazar' }}
+              </button>
+
+              @if(memExists){
+              <button class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md"
+                (click)="viewMembrentado()">
+                Ver Membrentado
+              </button>
+              }
+
+              <button *ngIf="memExists" class="bg-rose-600 hover:bg-rose-700 text-white py-2 px-4 rounded-md"
+                (click)="deleteMembrentado()">
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </p-dialog>
+
+    <!-- Visor PDF -->
+    <p-dialog header="Visualizando PDF" [(visible)]="displayDialog" [modal]="true" [closable]="true"
+      [style]="{width: '80vw', height: '80vh'}" [draggable]="false" [resizable]="false" (onHide)="liberarPdfUrl()"
+      [dismissableMask]="true">
+
+      <ngx-extended-pdf-viewer *ngIf="pdfUrl" [src]="pdfUrl" height="100%" [showToolbar]="true"
+        [showSidebarButton]="false" [showFindButton]="false" [showOpenFileButton]="false" [showPrintButton]="false"
+        [showDownloadButton]="true" [showPresentationModeButton]="false" [showRotateButton]="false"
+        [showHandToolButton]="false" [showSpreadButton]="false" [showPropertiesButton]="false" [textLayer]="false"
+        [showSecondaryToolbarButton]="false" [showStampEditor]="false" [showDrawEditor]="false" [showTextEditor]="false"
+        [showHighlightEditor]="false">
+      </ngx-extended-pdf-viewer>
+
+      <div *ngIf="!pdfUrl" class="p-3 text-center text-gray-600">
+        Cargando documento...
+      </div>
+    </p-dialog>
+
+  </div>
+</div>

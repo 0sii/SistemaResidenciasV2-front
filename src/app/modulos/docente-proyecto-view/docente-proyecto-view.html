@@ -1,0 +1,1207 @@
+<p-toast position="top-right"></p-toast>
+
+<div class="min-h-screen bg-transparent px-4 py-4 text-slate-900 dark:text-white sm:px-6">
+  <div class="mx-auto max-w-7xl space-y-6">
+
+
+    <!-- Loading / Error general -->
+    <div *ngIf="loading" class="flex justify-center py-8">
+      <p-progressSpinner></p-progressSpinner>
+    </div>
+
+    <div *ngIf="error" class="p-3 rounded-lg bg-red-50 text-red-700 border border-red-200 mb-4">
+      {{ error }}
+    </div>
+
+    <ng-container *ngIf="!loading && data">
+
+      <!-- ✅ Banner si está cancelado -->
+      <div *ngIf="proyectoCancelado" class="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-red-800">
+        <div class="font-semibold">Proyecto cancelado</div>
+        <div class="text-sm">Este proyecto ya no puede avanzar en el flujo.</div>
+      </div>
+
+      <!-- Header -->
+      <div
+        class="rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white dark:bg-slate-800 p-5 md:p-6 shadow-sm">
+        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div>
+
+
+            <div class="text-2xl md:text-3xl font-bold mt-1 text-slate-900 dark:text-white">
+              {{ data.proyecto?.titulo || '(Sin título)' }}
+            </div>
+
+            <div class="mt-2 flex flex-wrap gap-2 items-center">
+              <p-tag [value]="data.relacion.tipoRelacionDescripcion"></p-tag>
+
+
+              <p-tag *ngIf="proyectoEstadoLabel" [value]="'Estado proyecto: ' + proyectoEstadoLabel" severity="info">
+              </p-tag>
+            </div>
+          </div>
+
+
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+          <div
+            class="rounded-xl bg-slate-50 dark:bg-slate-900/40 p-4 border border-slate-200/60 dark:border-slate-700/60">
+            <div class="text-sm font-semibold mb-1 text-slate-800 dark:text-slate-100">Descripción</div>
+            <div class="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap">
+              {{ data.proyecto?.descripcion || '—' }}
+            </div>
+          </div>
+
+          <div
+            class="rounded-xl bg-slate-50 dark:bg-slate-900/40 p-4 border border-slate-200/60 dark:border-slate-700/60">
+            <div class="text-sm font-semibold mb-1 text-slate-800 dark:text-slate-100">Objetivo</div>
+            <div class="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap">
+              {{ data.proyecto?.objetivo || '—' }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+           <!-- Students -->
+      <section class="rounded-3xl border border-slate-300 bg-white p-5 shadow-sm dark:border-gray-600 dark:bg-gray-800 sm:p-6">
+        <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 class="text-xl font-semibold text-slate-900 dark:text-white">Alumnos asignados</h2>
+            <p class="text-sm text-slate-500 dark:text-gray-300">
+              Listado de residentes vinculados al proyecto.
+            </p>
+          </div>
+
+          <span
+            class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-gray-700 dark:text-gray-200">
+            {{ (data.estudiantes.length || 0) }} alumno(s)
+          </span>
+        </div>
+
+        <div
+          class="overflow-hidden rounded-2xl border border-slate-200 dark:border-gray-700
+                 [&_.p-datatable]:!border-0
+                 [&_.p-datatable-table]:min-w-full
+                 [&_.p-datatable-thead>tr>th]:border-b [&_.p-datatable-thead>tr>th]:border-slate-200 [&_.p-datatable-thead>tr>th]:bg-slate-50 [&_.p-datatable-thead>tr>th]:px-4 [&_.p-datatable-thead>tr>th]:py-3 [&_.p-datatable-thead>tr>th]:text-xs [&_.p-datatable-thead>tr>th]:font-semibold [&_.p-datatable-thead>tr>th]:uppercase [&_.p-datatable-thead>tr>th]:tracking-wide [&_.p-datatable-thead>tr>th]:text-slate-600
+                 [&_.p-datatable-tbody>tr]:bg-white [&_.p-datatable-tbody>tr:hover]:bg-slate-50 [&_.p-datatable-tbody>tr>td]:border-b [&_.p-datatable-tbody>tr>td]:border-slate-100 [&_.p-datatable-tbody>tr>td]:px-4 [&_.p-datatable-tbody>tr>td]:py-4
+                 dark:[&_.p-datatable-thead>tr>th]:border-gray-700 dark:[&_.p-datatable-thead>tr>th]:bg-gray-700 dark:[&_.p-datatable-thead>tr>th]:text-gray-200
+                 dark:[&_.p-datatable-tbody>tr]:bg-gray-800 dark:[&_.p-datatable-tbody>tr:hover]:bg-gray-700/70 dark:[&_.p-datatable-tbody>tr>td]:border-gray-700">
+          <p-table [value]="data.estudiantes" [responsiveLayout]="'scroll'">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Nombre</th>
+                <th>No. Control</th>
+                <th>Correo</th>
+              </tr>
+            </ng-template>
+
+            <ng-template pTemplate="body" let-e>
+              <tr>
+                <td class="font-medium text-slate-900 dark:text-white">
+                  {{ e.nombre }} {{ e.apellidoPaterno }} {{ e.apellidoMaterno }}
+                </td>
+                <td class="text-slate-700 dark:text-gray-200">{{ e.noControl }}</td>
+                <td class="text-slate-600 dark:text-gray-300">
+                  {{ e.correoInstitucional ?? e.correo_institucional ?? e.correo ?? e.correoPersonal ?? '—' }}
+                </td>
+              </tr>
+            </ng-template>
+
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="3" class="text-center text-slate-500 py-4 dark:text-gray-300">
+                  Sin alumnos vinculados.
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </section>
+
+  
+
+      <div
+        class="mt-4 rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white dark:bg-slate-800 p-5 shadow-sm">
+
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <div class="text-lg font-semibold text-slate-900 dark:text-white">
+            Etapas del proyecto
+          </div>
+        </div>
+
+        <p-accordion [multiple]="false" [(value)]="accordionValue" (onClose)="onAccordionClose($event)" class="w-full">
+
+          <!-- ======================= -->
+          <!-- Panel 0: Anteproyecto -->
+          <!-- ======================= -->
+          <p-accordion-panel value="0" class="mb-4 block">
+            <p-accordion-header [class]="accordionHeaderClass('0')">
+              <div class="flex items-center gap-4 w-full min-w-0">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                  <div class="h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold"
+                    [ngClass]="isAccordionOpen('0')
+                ? 'bg-sky-100 text-sky-700'
+                : 'bg-slate-100 text-slate-600'">
+                    1
+                  </div>
+
+                  <div class="min-w-0">
+                    <div class="font-semibold text-slate-800 truncate dark:text-white">Anteproyecto</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-300" *ngIf="!isAccordionOpen('0')">
+                      Primera etapa del flujo
+                    </div>
+                  </div>
+                </div>
+
+                <div class="shrink-0 pr-2">
+                  <p-tag *ngIf="anteEntregableIdEstado" severity="info"
+                    [value]="'Estado: ' + estadoEntregableLabelById(anteEntregableIdEstado)">
+                  </p-tag>
+                </div>
+              </div>
+            </p-accordion-header>
+
+            <p-accordion-content>
+              <div class="pt-3 w-full">
+                <div
+                  class="w-full rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white dark:bg-slate-800 p-5 shadow-sm">
+                  <div class="flex items-center justify-between gap-3 mb-3">
+                    <div>
+                      <div class="text-sm text-slate-500 dark:text-slate-300">
+                        Versiones cargadas + dictamen visible por versión
+                      </div>
+                    </div>
+
+                    <div class="flex gap-2 flex-wrap items-center">
+                      <div class="flex gap-2 flex-wrap items-center">
+
+                        @if(canRevisarAnteproyecto() && canAceptarProyecto() && !proyectoAceptando) {
+                        <!-- <button pButton icon="pi pi-check" class="p-button-success p-button-outlined"
+                    label="Aceptar proyecto" (click)="aceptarProyecto()">
+                  </button> -->
+                        }
+
+                        @if(
+                        canRevisarAnteproyecto() &&
+                        anteproyectoCerrado &&
+                        !proyectoCancelando &&
+                        !proyectoCancelado
+                        ) {
+                        <!-- <button pButton icon="pi pi-times" class="p-button-danger p-button-outlined"
+                    label="Cancelar proyecto" (click)="cancelarProyecto()">
+                  </button> -->
+                        }
+
+                      </div>
+                    </div>
+                  </div>
+
+                  <div *ngIf="anteLoading" class="flex justify-center py-6">
+                    <p-progressSpinner></p-progressSpinner>
+                  </div>
+
+                  <div *ngIf="anteError" class="p-3 rounded-lg bg-red-50 text-red-700 border border-red-200 mb-3">
+                    {{ anteError }}
+                  </div>
+
+                  <p-table [value]="documentos" [responsiveLayout]="'scroll'" [loading]="anteLoading">
+                    <ng-template pTemplate="header">
+                      <tr>
+                        <th>Versión / archivo</th>
+<th>Fecha de subida</th>
+<th>Subido por</th>
+<th>Estado</th>
+<th>Última observación</th>
+<th>Fecha última revisión</th>
+<th>Acciones</th>
+                      </tr>
+                    </ng-template>
+
+                 <ng-template pTemplate="body" let-row>
+  <tr>
+    <td class="min-w-[220px]">
+      <div class="font-medium">v{{ row.numeroVersion }}</div>
+      <div class="text-xs text-slate-500 dark:text-slate-300 break-all">
+        {{ row.nombreOriginal || '—' }}
+      </div>
+    </td>
+
+    <td>
+      {{ row.fechaSubida | fechaEs:true }}
+    </td>
+
+    <td>{{ row.subidoPor || '—' }}</td>
+
+    <td>
+      <p-tag
+        [severity]="row.estadoVisible === 'ACEPTADO' ? 'success'
+          : (row.estadoVisible === 'RECHAZADO' ? 'danger'
+          : (row.estadoVisible === 'REVISADO' ? 'warn' : 'info'))"
+        [value]="row.estadoVisible">
+      </p-tag>
+    </td>
+
+    <td class="max-w-[320px]">
+      <span
+        *ngIf="row.ultimaObservacion && row.ultimaObservacion.trim().length > 0; else sinObs"
+        class="whitespace-pre-wrap">
+        {{ row.ultimaObservacion }}
+      </span>
+      <ng-template #sinObs>—</ng-template>
+    </td>
+
+    <td>
+      <span *ngIf="row.fechaUltimaRevision; else sinFecha">
+        {{ row.fechaUltimaRevision | fechaEs:true }}
+      </span>
+      <ng-template #sinFecha>—</ng-template>
+    </td>
+
+    <td class="flex gap-2 flex-wrap">
+      <button
+        type="button"
+        class="bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-3 rounded-md shadow-md"
+        (click)="viewExpediente(row)">
+        Ver Documento
+      </button>
+
+      @if(canRevisarRow(row)) {
+      <button
+        pButton
+        icon="pi pi-pencil"
+        class="p-button-secondary"
+        label="Revisar"
+        (click)="abrirRevision(row)">
+      </button>
+      }
+
+      @if(row.lastRevisionId && row.lastTieneArchivo) {
+      <button
+        pButton
+        icon="pi pi-file"
+        class="p-button-help p-button-outlined"
+        label="Ver respuesta"
+        (click)="verRespuestaDocente(row)">
+      </button>
+      }
+    </td>
+  </tr>
+</ng-template>
+
+                    <ng-template pTemplate="emptymessage">
+                      <tr>
+                        <td colspan="7" class="text-center text-slate-500 py-6">
+                          No hay versiones de anteproyecto para este proyecto.
+                        </td>
+                      </tr>
+                    </ng-template>
+                  </p-table>
+
+                  <div *ngIf="!canRevisarAnteproyecto()" class="mt-3 text-sm text-slate-500 dark:text-slate-300">
+                    Este docente no tiene rol de revisor de anteproyecto en este proyecto.
+                  </div>
+                </div>
+              </div>
+            </p-accordion-content>
+          </p-accordion-panel>
+
+          <!-- ======================= -->
+          <!-- Panel 1: Reporte parcial 1 -->
+          <!-- ======================= -->
+          <p-accordion-panel value="1" *ngIf="canVerEtapasPosteriores()" class="mb-4 block">
+            <p-accordion-header [class]="accordionHeaderClass('1')">
+              <div class="flex items-center gap-4 w-full min-w-0">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                  <div class="h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold"
+                    [ngClass]="isAccordionOpen('1')
+                ? 'bg-sky-100 text-sky-700'
+                : 'bg-slate-100 text-slate-600'">
+                    2
+                  </div>
+
+                  <div class="min-w-0">
+                    <div class="font-semibold text-slate-800 truncate dark:text-white">Reporte parcial 1</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-300" *ngIf="!isAccordionOpen('1')">
+                      Seguimiento intermedio
+                    </div>
+                  </div>
+                </div>
+
+                <div class="shrink-0 pr-2">
+                  <p-tag severity="info" [value]="'Estado: ' + estadoEntregableLabelById(rp1EntregableIdEstado)">
+                  </p-tag>
+                </div>
+              </div>
+            </p-accordion-header>
+
+            <p-accordion-content>
+              <div class="pt-3 w-full">
+                <div *ngIf="canVerEtapasPosteriores()"
+                  class="w-full rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white dark:bg-slate-800 p-5 shadow-sm">
+
+                  <div class="flex items-center justify-between gap-3 mb-3">
+                    <div>
+                      <div class="text-sm text-slate-500 dark:text-slate-300">
+                        Archivos subidos por los alumnos (Etapa 2)
+                      </div>
+                    </div>
+
+                    <div class="flex gap-2 items-center flex-wrap">
+                      @if(isAsesorInterno() && rp1EntregableId && rp1EntregableIdEstado !== 4) {
+                      @if(!cambiandoEstadoReporte.rp1) {
+                      <button pButton icon="pi pi-check" class="p-button-success p-button-sm" label="Aprobar reporte"
+                        (click)="aprobarReporteParcial1()"></button>
+                      } @else {
+                      <span class="text-sm text-slate-500 dark:text-slate-300">Guardando...</span>
+                      }
+                      }
+                    </div>
+                  </div>
+
+                  <div *ngIf="rp1Loading" class="flex justify-center py-6">
+                    <p-progressSpinner></p-progressSpinner>
+                  </div>
+
+                  <div *ngIf="rp1Error" class="p-3 rounded-lg bg-red-50 text-red-700 border border-red-200 mb-3">
+                    {{ rp1Error }}
+                  </div>
+
+                  <p-table [value]="rp1Docs" [responsiveLayout]="'scroll'" [loading]="rp1Loading">
+                    <ng-template pTemplate="header">
+                      <tr>
+                        <th>Subido</th>
+                        <th>Subido por</th>
+                        <th>Estado</th>
+                        <th>Última observación</th>
+                        <th>Fecha última revisión</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </ng-template>
+
+                    <ng-template pTemplate="body" let-row>
+                      <tr>
+                        <td>{{ row.fechaSubida | fechaEs:true }}</td>
+                        <td>{{ row.subidoPor || '—' }}</td>
+
+                        <td>
+                          <p-tag [severity]="row.estadoVisible === 'ACEPTADO' ? 'success'
+                        : (row.estadoVisible === 'RECHAZADO' ? 'danger'
+                        : (row.estadoVisible === 'REVISADO' ? 'warn' : 'info'))" [value]="row.estadoVisible">
+                          </p-tag>
+                        </td>
+
+                        <td class="max-w-[320px]">
+                          <span *ngIf="row.ultimaObservacion && row.ultimaObservacion.trim().length > 0; else sinObsRp1"
+                            class="whitespace-pre-wrap">
+                            {{ row.ultimaObservacion }}
+                          </span>
+                          <ng-template #sinObsRp1>—</ng-template>
+                        </td>
+
+                        <td>
+                          <span *ngIf="row.fechaUltimaRevision; else sinFechaRp1">
+                            {{ row.fechaUltimaRevision | fechaEs:true }}
+                          </span>
+                          <ng-template #sinFechaRp1>—</ng-template>
+                        </td>
+
+                        <td class="flex gap-2 flex-wrap">
+                          <button type="button"
+                            class="bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-3 rounded-md shadow-md"
+                            (click)="abrirArchivo(row)">
+                            Ver Archivo
+                          </button>
+
+                          @if(canRevisarRp1Row(row)) {
+                          <button pButton icon="pi pi-pencil" class="p-button-secondary"
+                            [label]="isAsesorInterno() ? 'Dictaminar' : 'Comentar'" (click)="abrirRevisionRp1(row)">
+                          </button>
+                          }
+
+                          @if(row.lastRevisionId && row.lastTieneArchivo) {
+                          <button pButton icon="pi pi-file" class="p-button-help p-button-outlined"
+                            label="Ver respuesta" (click)="verRespuestaDocente(row)">
+                          </button>
+                          }
+                        </td>
+                      </tr>
+                    </ng-template>
+
+                    <ng-template pTemplate="emptymessage">
+                      <tr>
+                        <td colspan="6" class="text-center text-slate-500 py-6">
+                          No hay archivos de Reporte parcial 1 para este proyecto.
+                        </td>
+                      </tr>
+                    </ng-template>
+                  </p-table>
+
+                  <div *ngIf="isRevisorAnteproyecto()" class="mt-3 text-sm text-slate-500 dark:text-slate-300">
+                    Solo lectura: el revisor de anteproyecto no dictamina Reporte parcial 1.
+                  </div>
+
+                  <div *ngIf="!isRevisorAnteproyecto() && !canRevisarReporteParcial1()"
+                    class="mt-3 text-sm text-slate-500 dark:text-slate-300">
+                    Este entregable ya está cerrado o el proyecto está cancelado.
+                  </div>
+                </div>
+              </div>
+            </p-accordion-content>
+          </p-accordion-panel>
+
+          <!-- ======================= -->
+          <!-- Panel 2: Reporte parcial 2 -->
+          <!-- ======================= -->
+          <p-accordion-panel value="2" *ngIf="canVerEtapasPosteriores()" class="mb-4 block">
+            <p-accordion-header [class]="accordionHeaderClass('2')">
+              <div class="flex items-center gap-4 w-full min-w-0">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                  <div class="h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold"
+                    [ngClass]="isAccordionOpen('2')
+                ? 'bg-sky-100 text-sky-700'
+                : 'bg-slate-100 text-slate-600'">
+                    3
+                  </div>
+
+                  <div class="min-w-0">
+                    <div class="font-semibold text-slate-800 truncate dark:text-white">Reporte parcial 2</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-300" *ngIf="!isAccordionOpen('2')">
+                      Avance complementario
+                    </div>
+                  </div>
+                </div>
+
+                <div class="shrink-0 pr-2">
+                  <p-tag severity="info" [value]="'Estado: ' + estadoEntregableLabelById(rp2EntregableIdEstado)">
+                  </p-tag>
+                </div>
+              </div>
+            </p-accordion-header>
+
+            <p-accordion-content>
+              <div class="pt-3 w-full">
+                <div *ngIf="canVerEtapasPosteriores()"
+                  class="w-full rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white dark:bg-slate-800 p-5 shadow-sm">
+
+                  <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                    <div>
+                      <div class="text-sm text-slate-500 dark:text-slate-300">
+                        Archivos subidos por los alumnos (Etapa 3)
+                      </div>
+                    </div>
+
+                    <div class="flex gap-2 items-center flex-wrap">
+                      @if(isAsesorInterno() && rp2EntregableId && rp2EntregableIdEstado !== 4) {
+                      @if(!cambiandoEstadoReporte.rp2) {
+
+                      <button pButton icon="pi pi-check" class="p-button-success p-button-sm" label="Aprobar reporte"
+                        (click)="aprobarReporteParcial2()"></button>
+                      } @else {
+                      <span class="text-sm text-slate-500 dark:text-slate-300">Guardando...</span>
+                      }
+                      }
+                    </div>
+                  </div>
+
+                  <div *ngIf="rp2Loading" class="flex justify-center py-6">
+                    <p-progressSpinner></p-progressSpinner>
+                  </div>
+
+                  <div *ngIf="rp2Error" class="p-3 rounded-lg bg-red-50 text-red-700 border border-red-200 mb-3">
+                    {{ rp2Error }}
+                  </div>
+
+                  <p-table [value]="rp2Docs" [responsiveLayout]="'scroll'" [loading]="rp2Loading">
+                    <ng-template pTemplate="header">
+                      <tr>
+                        <th>Subido</th>
+                        <th>Subido por</th>
+                        <th>Estado</th>
+                        <th>Última observación</th>
+                        <th>Fecha última revisión</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </ng-template>
+
+                    <ng-template pTemplate="body" let-row>
+                      <tr>
+                        <td>{{ row.fechaSubida | fechaEs:true }}</td>
+                        <td>{{ row.subidoPor || '—' }}</td>
+
+                        <td>
+                          <p-tag [severity]="row.estadoVisible === 'ACEPTADO' ? 'success'
+                        : (row.estadoVisible === 'RECHAZADO' ? 'danger'
+                        : (row.estadoVisible === 'REVISADO' ? 'warn' : 'info'))" [value]="row.estadoVisible">
+                          </p-tag>
+                        </td>
+
+                        <td class="max-w-[320px]">
+                          <span *ngIf="row.ultimaObservacion && row.ultimaObservacion.trim().length > 0; else sinObsRp2"
+                            class="whitespace-pre-wrap">
+                            {{ row.ultimaObservacion }}
+                          </span>
+                          <ng-template #sinObsRp2>—</ng-template>
+                        </td>
+
+                        <td>
+                          <span *ngIf="row.fechaUltimaRevision; else sinFechaRp2">
+                            {{ row.fechaUltimaRevision | fechaEs:true }}
+                          </span>
+                          <ng-template #sinFechaRp2>—</ng-template>
+                        </td>
+
+                        <td class="flex gap-2 flex-wrap">
+                          <button type="button"
+                            class="bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-3 rounded-md shadow-md"
+                            (click)="abrirArchivo(row)">
+                            Ver Archivo
+                          </button>
+
+                          @if(canRevisarRp2Row(row)) {
+                          <button pButton icon="pi pi-pencil" class="p-button-secondary"
+                            [label]="isAsesorInterno() ? 'Dictaminar' : 'Comentar'" (click)="abrirRevisionRp2(row)">
+                          </button>
+                          }
+
+                          @if(row.lastRevisionId && row.lastTieneArchivo) {
+                          <button pButton icon="pi pi-file" class="p-button-help p-button-outlined"
+                            label="Ver respuesta" (click)="verRespuestaDocente(row)">
+                          </button>
+                          }
+                        </td>
+                      </tr>
+                    </ng-template>
+
+                    <ng-template pTemplate="emptymessage">
+                      <tr>
+                        <td colspan="6" class="text-center text-slate-500 py-6">
+                          No hay archivos de Reporte parcial 2 para este proyecto.
+                        </td>
+                      </tr>
+                    </ng-template>
+                  </p-table>
+
+                  <div *ngIf="isRevisorAnteproyecto()" class="mt-3 text-sm text-slate-500 dark:text-slate-300">
+                    Solo lectura: el revisor de anteproyecto no dictamina Reporte parcial 2.
+                  </div>
+
+                  <div *ngIf="!isRevisorAnteproyecto() && !canRevisarReporteParcial2()"
+                    class="mt-3 text-sm text-slate-500 dark:text-slate-300">
+                    Este entregable ya está cerrado o el proyecto está cancelado.
+                  </div>
+                </div>
+              </div>
+            </p-accordion-content>
+          </p-accordion-panel>
+
+          <!-- ======================= -->
+          <!-- Panel 3: Reporte final -->
+          <!-- ======================= -->
+          <p-accordion-panel value="3" *ngIf="canVerEtapasPosteriores()" class="mb-4 block">
+            <p-accordion-header [class]="accordionHeaderClass('3')">
+              <div class="flex items-center gap-4 w-full min-w-0">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                  <div class="h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold"
+                    [ngClass]="isAccordionOpen('3')
+                ? 'bg-sky-100 text-sky-700'
+                : 'bg-slate-100 text-slate-600'">
+                    4
+                  </div>
+
+                  <div class="min-w-0">
+                    <div class="font-semibold text-slate-800 truncate dark:text-white">Reporte final</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-300" *ngIf="!isAccordionOpen('3')">
+                      Entrega final del proyecto
+                    </div>
+                  </div>
+                </div>
+
+                <div class="shrink-0 pr-2">
+                  <p-tag severity="info" [value]="'Estado: ' + estadoEntregableLabelById(rfEntregableIdEstado)">
+                  </p-tag>
+                </div>
+              </div>
+            </p-accordion-header>
+
+            <p-accordion-content>
+              <div class="pt-3 w-full">
+                <div *ngIf="canVerEtapasPosteriores()"
+                  class="w-full rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white dark:bg-slate-800 p-5 shadow-sm">
+
+                  <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                    <div>
+                      <div class="text-sm text-slate-500 dark:text-slate-300">
+                        Archivos subidos por los alumnos (Etapa 4)
+                      </div>
+                    </div>
+
+                    <div class="flex gap-2 items-center flex-wrap">
+                      @if(isAsesorInterno() && rfEntregableId && rfEntregableIdEstado !== 4) {
+                      @if(!cambiandoEstadoReporte.rf) {
+
+                      <button pButton icon="pi pi-check" class="p-button-success p-button-sm" label="Aprobar reporte"
+                        (click)="aprobarReporteFinal()"></button>
+                      } @else {
+                      <span class="text-sm text-slate-500 dark:text-slate-300">Guardando...</span>
+                      }
+                      }
+                    </div>
+                  </div>
+
+                  <div *ngIf="rfLoading" class="flex justify-center py-6">
+                    <p-progressSpinner></p-progressSpinner>
+                  </div>
+
+                  <div *ngIf="rfError" class="p-3 rounded-lg bg-red-50 text-red-700 border border-red-200 mb-3">
+                    {{ rfError }}
+                  </div>
+
+                  <p-table [value]="rfDocs" [responsiveLayout]="'scroll'" [loading]="rfLoading">
+                    <ng-template pTemplate="header">
+                      <tr>
+                        <th>Subido</th>
+                        <th>Subido por</th>
+                        <th>Estado</th>
+                        <th>Última observación</th>
+                        <th>Fecha última revisión</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </ng-template>
+
+                    <ng-template pTemplate="body" let-row>
+                      <tr>
+                        <td>{{ row.fechaSubida | fechaEs:true }}</td>
+                        <td>{{ row.subidoPor || '—' }}</td>
+
+                        <td>
+                          <p-tag [severity]="row.estadoVisible === 'ACEPTADO' ? 'success'
+                        : (row.estadoVisible === 'RECHAZADO' ? 'danger'
+                        : (row.estadoVisible === 'REVISADO' ? 'warn' : 'info'))" [value]="row.estadoVisible">
+                          </p-tag>
+                        </td>
+
+                        <td class="max-w-[320px]">
+                          <span *ngIf="row.ultimaObservacion && row.ultimaObservacion.trim().length > 0; else sinObsRf"
+                            class="whitespace-pre-wrap">
+                            {{ row.ultimaObservacion }}
+                          </span>
+                          <ng-template #sinObsRf>—</ng-template>
+                        </td>
+
+                        <td>
+                          <span *ngIf="row.fechaUltimaRevision; else sinFechaRf">
+                            {{ row.fechaUltimaRevision | fechaEs:true }}
+                          </span>
+                          <ng-template #sinFechaRf>—</ng-template>
+                        </td>
+
+                        <td class="flex gap-2 flex-wrap">
+                          <button type="button"
+                            class="bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-3 rounded-md shadow-md"
+                            (click)="abrirArchivo(row)">
+                            Ver Archivo
+                          </button>
+
+                          @if(canRevisarRfRow(row)) {
+                          <button pButton icon="pi pi-pencil" class="p-button-secondary"
+                            [label]="isAsesorInterno() ? 'Dictaminar' : 'Comentar'" (click)="abrirRevisionRf(row)">
+                          </button>
+                          }
+
+                          @if(row.lastRevisionId && row.lastTieneArchivo) {
+                          <button pButton icon="pi pi-file" class="p-button-help p-button-outlined"
+                            label="Ver respuesta" (click)="verRespuestaDocente(row)">
+                          </button>
+                          }
+                        </td>
+                      </tr>
+                    </ng-template>
+
+                    <ng-template pTemplate="emptymessage">
+                      <tr>
+                        <td colspan="6" class="text-center text-slate-500 py-6">
+                          No hay archivos de Reporte final para este proyecto.
+                        </td>
+                      </tr>
+                    </ng-template>
+                  </p-table>
+
+                  <div *ngIf="isRevisorAnteproyecto()" class="mt-3 text-sm text-slate-500 dark:text-slate-300">
+                    Solo lectura: el revisor de anteproyecto no dictamina Reporte final.
+                  </div>
+
+                  <div *ngIf="!isRevisorAnteproyecto() && !canRevisarReporteFinal()"
+                    class="mt-3 text-sm text-slate-500 dark:text-slate-300">
+                    Este entregable ya está cerrado o el proyecto está cancelado.
+                  </div>
+                </div>
+              </div>
+            </p-accordion-content>
+          </p-accordion-panel>
+
+          <!-- ======================= -->
+          <!-- Panel 4: Acta -->
+          <!-- ======================= -->
+          <p-accordion-panel value="4" *ngIf="isAsesorInterno()" class="mb-4 block">
+            <p-accordion-header [class]="accordionHeaderClass('4')">
+              <div class="flex items-center gap-4 w-full min-w-0">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                  <div class="h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold"
+                    [ngClass]="isAccordionOpen('4')
+                ? 'bg-sky-100 text-sky-700'
+                : 'bg-slate-100 text-slate-600'">
+                    5
+                  </div>
+
+                  <div class="min-w-0">
+                    <div class="font-semibold text-slate-800 truncate dark:text-white">
+                      Acta de residencia profesional
+                    </div>
+                    <div class="text-xs text-slate-500 dark:text-slate-300" *ngIf="!isAccordionOpen('4')">
+                      Cierre documental por alumno
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ml-auto flex items-center gap-2 flex-wrap justify-end shrink-0 pr-2">
+                  <span class="px-2 py-1 rounded-full text-xs bg-slate-100 text-slate-700">
+                    {{ totalActasCargadas }}/{{ estudiantesProyecto.length }} cargadas
+                  </span>
+
+                  <span *ngIf="todasActasCargadas"
+                    class="px-2 py-1 rounded-full text-xs bg-emerald-100 text-emerald-700">
+                    Completas ✅
+                  </span>
+
+                  <span *ngIf="!todasActasCargadas" class="px-2 py-1 rounded-full text-xs bg-amber-100 text-amber-700">
+                    Pendientes: {{ totalActasPendientes }}
+                  </span>
+                </div>
+              </div>
+            </p-accordion-header>
+
+            <p-accordion-content>
+              <div class="pt-3 w-full">
+                <div
+                  class="w-full rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white dark:bg-slate-800 p-5 shadow-sm">
+
+                  <div class="mb-4 text-sm text-slate-600 dark:text-slate-300">
+                    {{ mensajeActaResidencia }}
+                  </div>
+
+                  <div *ngIf="!puedeGestionarActasResidencia"
+                    class="p-3 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">
+                    Esta etapa todavía no está disponible.
+                  </div>
+
+                  <div *ngIf="puedeGestionarActasResidencia">
+                    <p-table [value]="estudiantesProyecto" [responsiveLayout]="'scroll'" [loading]="actasLoading">
+                      <ng-template pTemplate="header">
+                        <tr>
+                          <th>Alumno</th>
+                          <th>Estado</th>
+                          <th>Archivo</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </ng-template>
+
+                      <ng-template pTemplate="body" let-e>
+                        <tr>
+                          <td class="font-medium">
+                            {{ e.nombre }} {{ e.apellidoPaterno }} {{ e.apellidoMaterno }}
+                          </td>
+
+                          <td>
+                            @if (actaMap[estId(e)]) {
+                            <span class="px-2 py-1 rounded-full text-xs font-semibold"
+                              [ngClass]="actaEstadoClase(actaMap[estId(e)])">
+                              {{ actaEstadoTexto(actaMap[estId(e)]) }}
+                            </span>
+
+                            @if (isActaRechazada(actaMap[estId(e)]) && actaMap[estId(e)]?.comentarioRevision) {
+                            <div class="mt-2 text-xs text-red-600 dark:text-red-300 whitespace-pre-wrap">
+                              {{ actaMap[estId(e)]?.comentarioRevision }}
+                            </div>
+                            }
+                            } @else {
+                            <span class="px-2 py-1 rounded-full text-xs bg-amber-100 text-amber-700">
+                              Pendiente ⏳
+                            </span>
+                            }
+                          </td>
+
+                          <td class="truncate max-w-[260px]">
+                            {{ actaMap[estId(e)]?.nombreOriginal || '-' }}
+                          </td>
+
+                          <td>
+                            <div class="flex gap-2 flex-wrap items-center">
+                              <button *ngIf="actaMap[estId(e)]" type="button"
+                                class="bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-3 rounded-md shadow-md"
+                                (click)="verActa(e)">
+                                Ver
+                              </button>
+
+                              <input type="file" accept="application/pdf,.pdf" [id]="'actaInput-' + estId(e)" hidden
+                                (change)="onActaSelected(e, $event)" />
+
+                              <button *ngIf="puedeReemplazarActa(e)" type="button"
+                                class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-md shadow-md"
+                                (click)="clickActaInput(e)">
+                                <ng-container *ngIf="actaMap[estId(e)]">Reemplazar</ng-container>
+                                <ng-container *ngIf="!actaMap[estId(e)]">Subir</ng-container>
+                              </button>
+
+                              <span *ngIf="actaMap[estId(e)] && isActaAceptada(actaMap[estId(e)])"
+                                class="inline-flex items-center px-3 py-2 rounded-md text-sm bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                Documento aceptado
+                              </span>
+
+                              <span *ngIf="actaMap[estId(e)] && isActaEnRevision(actaMap[estId(e)])"
+                                class="inline-flex items-center px-3 py-2 rounded-md text-sm bg-sky-50 text-sky-700 border border-sky-200">
+                                Esperando dictamen
+                              </span>
+
+                              <span *ngIf="actaMap[estId(e)] && isActaRechazada(actaMap[estId(e)])"
+                                class="inline-flex items-center px-3 py-2 rounded-md text-sm bg-red-50 text-red-700 border border-red-200">
+                                Debe reemplazarse
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      </ng-template>
+                    </p-table>
+                  </div>
+                </div>
+              </div>
+            </p-accordion-content>
+          </p-accordion-panel>
+
+        </p-accordion>
+      </div>
+      <!-- Dialog revisión Reporte Parcial 2 -->
+      <p-dialog [(visible)]="showRp2RevisarDialog" [modal]="true" [dismissableMask]="true" [draggable]="false"
+        [resizable]="false" [style]="{ width: '100%', 'max-width': '740px' }">
+
+        <ng-template pTemplate="header">
+          <div class="flex flex-col">
+            <div class="text-lg font-semibold">Revisión · Reporte parcial 2</div>
+            <div class="text-sm text-slate-500">
+              {{ revisandoRp2Row?.nombreOriginal }}
+            </div>
+          </div>
+        </ng-template>
+
+        <div class="grid gap-3">
+          <label class="text-sm font-semibold">Observaciones</label>
+          <textarea pTextarea rows="6" [(ngModel)]="rp2Observaciones"
+            placeholder="Escribe observaciones claras y accionables..."></textarea>
+
+          <div class="mt-2">
+            <label class="text-sm font-semibold block mb-1">Archivo de respuesta (opcional)</label>
+
+            <div class="flex items-center gap-2 flex-wrap">
+              <input #rp2FileInput type="file" class="hidden"
+                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                (change)="onRp2DocenteFileSelected($event)" />
+
+              <button pButton type="button" icon="pi pi-paperclip" class="p-button-outlined" label="Seleccionar archivo"
+                (click)="rp2FileInput.click()"></button>
+
+              <span class="text-sm text-slate-600 dark:text-slate-200" *ngIf="rp2DocenteArchivoSeleccionado">
+                📄 {{ rp2DocenteArchivoSeleccionado.name }}
+                <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-sm"
+                  (click)="limpiarArchivoRp2Docente()" label="Quitar"></button>
+              </span>
+
+              <span class="text-sm text-slate-400" *ngIf="!rp2DocenteArchivoSeleccionado">
+                (PDF/DOC/DOCX)
+              </span>
+            </div>
+          </div>
+
+          <div class="flex gap-2 flex-wrap mt-2">
+            @if(!guardandoRp2Revision) {
+
+            @if(isAsesorInterno()) {
+            <button pButton icon="pi pi-pencil" class="p-button-warn" label="Mandar a corregir"
+              (click)="guardarRevisionRp2('REVISADO')"></button>
+
+            <button pButton icon="pi pi-check" class="p-button-success" label="Aprobar"
+              (click)="guardarRevisionRp2('ACEPTADO')"></button>
+
+            <button pButton icon="pi pi-times" class="p-button-danger" label="Rechazar"
+              (click)="guardarRevisionRp2('RECHAZADO')"></button>
+            } @else {
+            <button pButton icon="pi pi-comment" class="p-button-warn" label="Enviar observaciones"
+              (click)="guardarRevisionRp2('REVISADO')"></button>
+            }
+
+            } @else {
+            <div class="text-sm text-slate-500">Guardando...</div>
+            }
+          </div>
+
+          <div class="text-xs text-slate-500 mt-1">
+            Nota: el dictamen final (aprobar/rechazar) lo emite el asesor interno.
+          </div>
+        </div>
+      </p-dialog>
+
+      <!-- Dialog revisión Reporte final -->
+      <p-dialog [(visible)]="showRfRevisarDialog" [modal]="true" [dismissableMask]="true" [draggable]="false"
+        [resizable]="false" [style]="{ width: '100%', 'max-width': '740px' }">
+
+        <ng-template pTemplate="header">
+          <div class="flex flex-col">
+            <div class="text-lg font-semibold">Revisión · Reporte final</div>
+            <div class="text-sm text-slate-500">
+              {{ revisandoRfRow?.nombreOriginal }}
+            </div>
+          </div>
+        </ng-template>
+
+        <div class="grid gap-3">
+          <label class="text-sm font-semibold">Observaciones</label>
+          <textarea pTextarea rows="6" [(ngModel)]="rfObservaciones"
+            placeholder="Escribe observaciones claras y accionables..."></textarea>
+
+          <div class="mt-2">
+            <label class="text-sm font-semibold block mb-1">Archivo de respuesta (opcional)</label>
+
+            <div class="flex items-center gap-2 flex-wrap">
+              <input #rfFileInput type="file" class="hidden"
+                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                (change)="onRfDocenteFileSelected($event)" />
+
+              <button pButton type="button" icon="pi pi-paperclip" class="p-button-outlined" label="Seleccionar archivo"
+                (click)="rfFileInput.click()"></button>
+
+              <span class="text-sm text-slate-600 dark:text-slate-200" *ngIf="rfDocenteArchivoSeleccionado">
+                📄 {{ rfDocenteArchivoSeleccionado.name }}
+                <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-sm"
+                  (click)="limpiarArchivoRfDocente()" label="Quitar"></button>
+              </span>
+
+              <span class="text-sm text-slate-400" *ngIf="!rfDocenteArchivoSeleccionado">
+                (PDF/DOC/DOCX)
+              </span>
+            </div>
+          </div>
+
+          <div class="flex gap-2 flex-wrap mt-2">
+            @if(!guardandoRfRevision) {
+
+            @if(isAsesorInterno()) {
+            <button pButton icon="pi pi-pencil" class="p-button-warn" label="Mandar a corregir"
+              (click)="guardarRevisionRf('REVISADO')"></button>
+
+            <button pButton icon="pi pi-check" class="p-button-success" label="Aprobar"
+              (click)="guardarRevisionRf('ACEPTADO')"></button>
+
+            <button pButton icon="pi pi-times" class="p-button-danger" label="Rechazar"
+              (click)="guardarRevisionRf('RECHAZADO')"></button>
+            } @else {
+            <button pButton icon="pi pi-comment" class="p-button-warn" label="Enviar observaciones"
+              (click)="guardarRevisionRf('REVISADO')"></button>
+            }
+
+            } @else {
+            <div class="text-sm text-slate-500">Guardando...</div>
+            }
+          </div>
+
+          <div class="text-xs text-slate-500 mt-1">
+            Nota: el dictamen final (aprobar/rechazar) lo emite el asesor interno.
+          </div>
+        </div>
+      </p-dialog>
+
+
+      <div *ngIf="!canVerEtapasPosteriores()" class="mt-3 text-sm text-slate-500 dark:text-slate-300">
+        Este docente no tiene rol de asesor interno / revisor para etapas 2-4 en este proyecto.
+      </div>
+
+      <!-- Dialog revisión Reporte Parcial 1 -->
+      <p-dialog [(visible)]="showRp1RevisarDialog" [modal]="true" [dismissableMask]="true" [draggable]="false"
+        [resizable]="false" [style]="{ width: '100%', 'max-width': '740px' }">
+
+        <ng-template pTemplate="header">
+          <div class="flex flex-col">
+            <div class="text-lg font-semibold">Revisión · Reporte parcial 1</div>
+            <div class="text-sm text-slate-500">
+              {{ revisandoRp1Row?.nombreOriginal }}
+            </div>
+          </div>
+        </ng-template>
+
+        <div class="grid gap-3">
+          <label class="text-sm font-semibold">Observaciones</label>
+          <textarea pTextarea rows="6" [(ngModel)]="rp1Observaciones"
+            placeholder="Escribe observaciones claras y accionables..."></textarea>
+
+          <!-- Archivo opcional -->
+          <div class="mt-2">
+            <label class="text-sm font-semibold block mb-1">Archivo de respuesta (opcional)</label>
+
+            <div class="flex items-center gap-2 flex-wrap">
+              <input #rp1FileInput type="file" class="hidden"
+                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                (change)="onRp1DocenteFileSelected($event)" />
+
+              <button pButton type="button" icon="pi pi-paperclip" class="p-button-outlined" label="Seleccionar archivo"
+                (click)="rp1FileInput.click()"></button>
+
+              <span class="text-sm text-slate-600 dark:text-slate-200" *ngIf="rp1DocenteArchivoSeleccionado">
+                📄 {{ rp1DocenteArchivoSeleccionado.name }}
+                <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-sm"
+                  (click)="limpiarArchivoRp1Docente()" label="Quitar"></button>
+              </span>
+
+              <span class="text-sm text-slate-400" *ngIf="!rp1DocenteArchivoSeleccionado">
+                (PDF/DOC/DOCX)
+              </span>
+            </div>
+          </div>
+
+          <!-- Botones -->
+          <div class="flex gap-2 flex-wrap mt-2">
+            @if(!guardandoRp1Revision) {
+
+            @if(isAsesorInterno()) {
+            <button pButton icon="pi pi-pencil" class="p-button-warn" label="Mandar a corregir"
+              (click)="guardarRevisionRp1('REVISADO')"></button>
+
+            <button pButton icon="pi pi-check" class="p-button-success" label="Aprobar"
+              (click)="guardarRevisionRp1('ACEPTADO')"></button>
+
+            <button pButton icon="pi pi-times" class="p-button-danger" label="Rechazar"
+              (click)="guardarRevisionRp1('RECHAZADO')"></button>
+            } @else {
+            <button pButton icon="pi pi-comment" class="p-button-warn" label="Enviar observaciones"
+              (click)="guardarRevisionRp1('REVISADO')"></button>
+            }
+
+            } @else {
+            <div class="text-sm text-slate-500">Guardando...</div>
+            }
+          </div>
+
+          <div class="text-xs text-slate-500 mt-1">
+            Nota: el dictamen final (aprobar/rechazar) lo emite el asesor interno.
+          </div>
+        </div>
+      </p-dialog>
+
+
+      <!-- p-dialog de PrimeNG para visualizar el PDF -->
+      <p-dialog header="Visualizando PDF" [(visible)]="displayDialog" [modal]="true" [closable]="true"
+        [style]="{width: '80vw'}" (onHide)="liberarPdfUrl()">
+        <ngx-extended-pdf-viewer *ngIf="pdfUrl" [src]="pdfUrl" height="75vh" [showToolbar]="true"
+          [showSidebarButton]="false" [showFindButton]="false" [showOpenFileButton]="false" [showPrintButton]="false"
+          [showDownloadButton]="true" [showPresentationModeButton]="false" [showRotateButton]="false"
+          [showHandToolButton]="false" [showSpreadButton]="false" [showPropertiesButton]="false" [textLayer]="false"
+          [showSecondaryToolbarButton]="false" [showStampEditor]="false" [showDrawEditor]="false"
+          [showTextEditor]="false" [showHighlightEditor]="false">
+        </ngx-extended-pdf-viewer>
+      </p-dialog>
+
+
+      <!-- Dialog revisión -->
+      <!-- Dialog revisión -->
+      <p-dialog [(visible)]="showRevisarDialog" [modal]="true" [dismissableMask]="true" [draggable]="false"
+        [resizable]="false" [style]="{ width: '100%', 'max-width': '740px' }">
+
+        <ng-template pTemplate="header">
+          <div class="flex flex-col">
+            <div class="text-lg font-semibold">Revisión de anteproyecto</div>
+            <div class="text-sm text-slate-500">
+              {{ revisandoRow?.nombreOriginal }} · v{{ revisandoRow?.numeroVersion }}
+            </div>
+          </div>
+        </ng-template>
+
+        <div class="grid gap-3">
+          <label class="text-sm font-semibold">Observaciones</label>
+          <textarea pTextarea rows="6" [(ngModel)]="observaciones"
+            placeholder="Escribe observaciones claras y accionables..."></textarea>
+
+          <!-- ✅ Archivo opcional del docente -->
+          <div class="mt-2">
+            <label class="text-sm font-semibold block mb-1">Archivo de respuesta (opcional)</label>
+
+            <div class="flex items-center gap-2 flex-wrap">
+              <input #fileInput type="file" class="hidden"
+                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                (change)="onDocenteFileSelected($event)" />
+
+              <button pButton type="button" icon="pi pi-paperclip" class="p-button-outlined" label="Seleccionar archivo"
+                (click)="fileInput.click()"></button>
+
+              <span class="text-sm text-slate-600 dark:text-slate-200" *ngIf="docenteArchivoSeleccionado">
+                📄 {{ docenteArchivoSeleccionado.name }}
+                <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-sm"
+                  (click)="limpiarArchivoDocente()" label="Quitar"></button>
+              </span>
+
+              <span class="text-sm text-slate-400" *ngIf="!docenteArchivoSeleccionado">
+                (PDF/DOC/DOCX)
+              </span>
+            </div>
+          </div>
+
+          <!-- ✅ Ajuste de integrantes (solo si va a APROBAR) -->
+          <div
+            class="mt-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30">
+            <div class="text-sm font-semibold mb-1">No. de integrantes del proyecto</div>
+
+            <div class="text-xs text-slate-500 dark:text-slate-300 mb-2">
+              Si apruebas el anteproyecto, puedes actualizar el número de residentes (integrantes) del
+              proyecto.
+            </div>
+
+            <div class="flex items-center gap-3 flex-wrap">
+              <p-inputNumber [(ngModel)]="nuevoNoResidentes" [min]="minNoResidentesPermitido" [max]="20"
+                [useGrouping]="false" styleClass="w-28" inputStyleClass="w-full">
+              </p-inputNumber>
+
+              <span class="text-xs text-slate-500 dark:text-slate-300">
+                Mínimo permitido: {{ minNoResidentesPermitido }}
+              </span>
+
+              <span *ngIf="noResidentesError" class="text-xs text-red-600">
+                {{ noResidentesError }}
+              </span>
+            </div>
+          </div>
+
+
+          <!-- ✅ Botones con los nombres que pediste -->
+          <div class="flex gap-2 flex-wrap mt-2">
+            @if(!guardandoRevision && !proyectoCancelado && !anteproyectoCerrado) {
+
+            <button pButton icon="pi pi-pencil" class="p-button-warn" label="Mandar a corregir"
+              (click)="guardarRevision('REVISADO')"></button>
+
+            <button pButton icon="pi pi-check" class="p-button-success" label="Aprobar"
+              (click)="guardarRevision('ACEPTADO')"></button>
+
+            <button pButton icon="pi pi-times" class="p-button-danger" label="Rechazar"
+              (click)="guardarRevision('RECHAZADO')"></button>
+
+            } @else {
+            <div class="text-sm text-slate-500">No disponible por estado del flujo.</div>
+            }
+          </div>
+
+          <div class="text-xs text-slate-500 mt-1">
+            Tip: si mandas a corregir, escribe exactamente qué debe cambiar el alumno ✅
+          </div>
+        </div>
+      </p-dialog>
+
+
+    </ng-container>
+  </div>
+</div>
