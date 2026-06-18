@@ -342,6 +342,12 @@ export class ProyectosService {
       idEstado
     } as any);
   }
+
+  /** El revisor de anteproyecto marca que terminó su revisión.
+   *  Estado 4 → 5 (Anteproyecto Revisado) → 6 (En Espera de Asesor Interno) */
+  marcarRevisionCompletada(idProyecto: number): Observable<{ ok: boolean; estadoNuevo: number; mensaje: string }> {
+    return this.http.post<any>(`${this.baseUrl}/${idProyecto}/MarcarRevisionCompletada`, {});
+  }
   // En proyectos.service.ts — agregar este método:
   sustituirDocente(
     idProyecto: number,

@@ -1074,17 +1074,90 @@ confirmarSustitucion(): void {
       this.cdr.detectChanges();
     })
   ).subscribe({
-    next: (res: any) => {
+    next: async (res: any) => {
       this.showSuccess(res?.mensaje ?? 'Sustitución realizada.');
       this.showSustitucionDialog = false;
       this.cargarGestionEquipo(idProyecto);
       this.loadProyectos();
+
+      // ── Generar oficio del docente sustituto automáticamente ──────────
+      if (this.sustitucionTipoClave === 'ASESOR_INTERNO') {
+        await this.generarOficioSustituto(idProyecto, this.sustitucionDocenteEntraId!);
+      }
     },
     error: (e: any) => {
       const msg = e?.error?.mensaje ?? e?.error ?? e?.message ?? 'No se pudo completar la sustitución.';
       this.showError(typeof msg === 'string' ? msg : 'No se pudo completar la sustitución.');
     }
   });
+}
+
+// ── Genera el oficio del asesor sustituto y lo descarga automáticamente ──
+private async generarOficioSustituto(idProyecto: number, idDocenteEntra: number): Promise<void> {
+  try {
+    const p: any = this.detallesProyecto;
+    if (!p) return;
+
+    const periodoId = Number(p?.idPeriodoAcademico ?? 0);
+    if (!periodoId) return;
+
+    const tieneMem = await this.ensureMembrentado(periodoId);
+    if (!tieneMem) {
+      this.showError('Sustitución guardada, pero el período no tiene membretado para generar el oficio.');
+      return;
+    }
+
+    // Buscar el nombre del nuevo asesor en la lista de docentes
+    const docenteEntra = this.docentesOptions.find((d: any) => d.value === idDocenteEntra);
+    const nombreAsesor = docenteEntra?.nombrePlano ?? docenteEntra?.label ?? 'NOMBRE DEL ASESOR';
+
+    const integrantes = await this.getIntegrantesProyecto(idProyecto);
+    if (!integrantes.length) {
+      this.showError('Sustitución guardada, pero no hay integrantes para generar el oficio.');
+      return;
+    }
+
+    const residentes = integrantes
+      .map((al: any) => {
+        const nombre = `${al?.nombre ?? ''} ${al?.apellidoPaterno ?? ''} ${al?.apellidoMaterno ?? ''}`.trim();
+        const noControl = String(al?.noControl ?? al?.numeroControl ?? '').trim();
+        if (!nombre || !noControl) return null;
+        return `${nombre} (${noControl})`;
+      })
+      .filter(Boolean) as string[];
+
+    if (!residentes.length) return;
+
+    const payload = {
+      ciudad: 'Oaxaca de Juárez, Oaxaca',
+      fecha: new Date().toISOString(),
+      oficio: 'JV-XXX/2026',
+
+      destinatarioNombre: nombreAsesor,
+      destinatarioCargoLinea1: 'CATEDRÁTICO DEL I.T. DE OAXACA',
+
+      nombreProyecto: p.titulo ?? '',
+      empresa: this.getEmpresaNombre(p.idEmpresa),
+      carrera: (integrantes[0]?.carreraNombre ?? ''),
+      periodoRealizacion: this.periodoRealizacionTexto(periodoId),
+
+      residentes,
+
+      firmaNombre: 'NOMBRE DE QUIEN FIRMA',
+      firmaCargoLinea1: 'JEFA(E) DEL DEPARTAMENTO',
+      firmaCargoLinea2: 'DE SISTEMAS Y COMPUTACIÓN'
+    };
+
+    const blob = await this.periodosSvc.oficioAsesorInterno(periodoId, payload).toPromise();
+    const safe = String(p?.titulo ?? `Proyecto_${idProyecto}`).replace(/[^\w\-]+/g, '_');
+    this.periodosSvc.downloadBlob(blob as Blob, `Oficio_Asesor_Sustituto_${safe}.pdf`);
+
+    this.showSuccess('Oficio del asesor sustituto generado y descargado ✅');
+  } catch (e: any) {
+    console.error('Error generando oficio sustituto:', e);
+    // No mostramos error crítico: la sustitución ya fue exitosa
+    this.showError('Sustitución guardada, pero no se pudo generar el oficio automáticamente. Genéralo manualmente.');
+  }
 }
 
 confirmGuardarAsesorYRevisores(): void {

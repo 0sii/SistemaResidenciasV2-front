@@ -97,6 +97,44 @@ export class DocenteProyectoDashboard implements OnInit {
   rolSeleccionadoAutoAsign: 'ASESOR_INTERNO' | 'REVISOR_ANTEPROYECTO' | null = null;
   asignando              = false;
 
+  // ── Marcar revisión completada ────────────────────────────────────────
+  showConfirmRevisionDialog  = false;
+  proyectoParaRevision: DocenteProyectoDashboardItem | null = null;
+  marcandoRevision           = false;
+
+  abrirConfirmRevision(row: DocenteProyectoDashboardItem): void {
+    this.proyectoParaRevision     = row;
+    this.showConfirmRevisionDialog = true;
+    this.cdr.markForCheck();
+  }
+
+  confirmarRevisionCompletada(): void {
+    if (!this.proyectoParaRevision) return;
+    this.marcandoRevision = true;
+
+    this.proyectosService.marcarRevisionCompletada(this.proyectoParaRevision.idProyecto)
+      .pipe(finalize(() => { this.marcandoRevision = false; this.cdr.markForCheck(); }))
+      .subscribe({
+        next: (res) => {
+          this.showConfirmRevisionDialog = false;
+          this.toast.add({
+            severity: 'success',
+            summary: 'Revisión completada',
+            detail: res.mensaje ?? 'El proyecto avanzó a "En Espera de Asignación de Asesor Interno".',
+            life: 6000
+          });
+          this.cargar();
+          // Recargar disponibles para que aparezca el proyecto en estado 6
+          if (this.activeTab === 'disponibles') this.cargarDisponibles();
+        },
+        error: (err) => {
+          const msg = err?.error?.message ?? err?.error ?? 'No se pudo completar la revisión.';
+          this.toast.add({ severity: 'error', summary: 'Error', detail: msg, life: 8000 });
+        }
+      });
+  }
+  // ─────────────────────────────────────────────────────────────────────
+
   disponibles: any[]     = [];
   yaAlcanceLimite        = false;
   rolYaElegido: 'ASESOR_INTERNO' | 'REVISOR_ANTEPROYECTO' | null = null;

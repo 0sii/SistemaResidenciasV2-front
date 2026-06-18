@@ -592,6 +592,59 @@ this.proyectosSvc.finalizarProyecto(
   estadoRevisionPendiente: EstadoRevisionDocumento | null = null;
   comentarioRevisionDraft = '';
 
+  // ── Aprobar todos ──────────────────────────────────────────────────────────
+  confirmAprobarTodosVisible = false;
+  aprobandoTodos = false;
+
+  get docsEnRevision(): any[] {
+    if (!this.expedienteMap) return [];
+    return Object.values(this.expedienteMap).filter(
+      (doc: any) => doc && this.getEstadoRevision(doc) === EstadoRevisionDocumento.EnRevision
+    );
+  }
+
+  solicitarAprobarTodos(): void {
+    if (this.docsEnRevision.length === 0) return;
+    this.confirmAprobarTodosVisible = true;
+  }
+
+  confirmarAprobarTodos(): void {
+    this.confirmAprobarTodosVisible = false;
+    const docs = [...this.docsEnRevision];
+    if (docs.length === 0) return;
+
+    this.aprobandoTodos = true;
+    const calls = docs.map(doc =>
+      this.documentosSvc.actualizarEstadoDocumento(
+        Number(doc.id ?? doc.Id),
+        EstadoRevisionDocumento.Aceptado,
+        null
+      ).toPromise().then((resp: any) => {
+        doc.estadoRevision = Number(resp?.estadoRevision ?? EstadoRevisionDocumento.Aceptado);
+        doc.estadoRevisionTexto = String(resp?.estadoRevisionTexto ?? 'Aceptado');
+        doc.comentarioRevision = null;
+        doc.fechaRevision = resp?.fechaRevision ?? new Date().toISOString();
+      })
+    );
+
+    Promise.allSettled(calls).then(results => {
+      this.aprobandoTodos = false;
+      const errores = results.filter(r => r.status === 'rejected').length;
+      const ok = results.length - errores;
+
+      const alumnoId = Number(this.selectedAlumnoForExpediente?.id ?? this.selectedAlumnoForExpediente?.Id ?? 0);
+      if (alumnoId) this.actualizarStatusExpedienteLocal(alumnoId);
+
+      if (errores === 0) {
+        this.showSuccess(`${ok} documento(s) aprobados correctamente.`);
+      } else {
+        this.showError(`${ok} aprobado(s), ${errores} fallaron. Revisa individualmente.`);
+      }
+      this.cdr.detectChanges();
+    });
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+
   getEstadoRevision(doc: any): number {
     return Number(doc?.estadoRevision ?? doc?.EstadoRevision ?? 0);
   }

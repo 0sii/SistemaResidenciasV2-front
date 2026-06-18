@@ -23,6 +23,29 @@
   </ng-template>
 </p-dialog>
 
+<!-- ── Dialog: confirmar revisión completada ────────────────────────── -->
+<p-dialog [(visible)]="showConfirmRevisionDialog" [modal]="true" header="Marcar revisión como completada"
+  [style]="{ width: '440px' }" [closable]="!marcandoRevision">
+  <div *ngIf="proyectoParaRevision" class="confirm-dialog-body">
+    <p>¿Confirmas que has completado la revisión del anteproyecto?</p>
+    <div class="confirm-proyecto-box">
+      <p class="confirm-titulo">{{ proyectoParaRevision.titulo || '(Sin título)' }}</p>
+    </div>
+    <p class="confirm-nota">
+      El proyecto pasará a <strong>"Anteproyecto Revisado"</strong> y luego a
+      <strong>"En Espera de Asignación de Asesor Interno"</strong>, donde un docente
+      (el mismo u otro) podrá asignarse como asesor.
+    </p>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton label="Cancelar" severity="secondary" [disabled]="marcandoRevision"
+      (click)="showConfirmRevisionDialog = false" class="mr-2"></button>
+    <button pButton [label]="marcandoRevision ? 'Procesando...' : 'Sí, revisión completada'"
+      severity="warn" [disabled]="marcandoRevision" (click)="confirmarRevisionCompletada()">
+    </button>
+  </ng-template>
+</p-dialog>
+
 <!-- ── Contenedor principal ─────────────────────────────────────────── -->
 <div class="dashboard-container">
 
@@ -115,9 +138,22 @@
             {{ toDate(row.fechaInscripcion) | date:'dd/MM/yyyy' }}
           </td>
           <td>
-            <button pButton icon="pi pi-external-link" (click)="verProyecto(row)" class="btn-abrir">
-              Abrir
-            </button>
+            <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+              <button pButton icon="pi pi-external-link" (click)="verProyecto(row)" class="btn-abrir">
+                Abrir
+              </button>
+              <!-- Botón solo visible para el revisor de anteproyecto cuando el proyecto está en estado 4 -->
+              <button *ngIf="row.idTipoRelacion === 1 && row.estadoId === 4"
+                pButton
+                icon="pi pi-check-circle"
+                severity="warn"
+                class="btn-abrir"
+                title="Marcar que terminaste la revisión del anteproyecto"
+                [disabled]="marcandoRevision"
+                (click)="abrirConfirmRevision(row)">
+                Revisión completa
+              </button>
+            </div>
           </td>
         </tr>
       </ng-template>
@@ -138,27 +174,27 @@
   <!-- ══════════════════════════════════════════════════════════════════ -->
   <div *ngIf="activeTab === 'disponibles'" class="tab-content">
 
-    <!-- Banner: ya eligió su proyecto -->
-    <div *ngIf="yaAlcanceLimite" class="info-banner info-banner--success">
+    <!-- Banner: ya completó ambos roles -->
+    <div *ngIf="disponiblesData?.limiteRevisorAlcanzado && disponiblesData?.limiteAsesorAlcanzado" class="info-banner info-banner--success">
       <i class="pi pi-check-circle info-banner__icon"></i>
       <div>
-        <p class="info-banner__title">Ya elegiste tu proyecto</p>
+        <p class="info-banner__title">Ya cubriste tu cuota de proyectos</p>
         <p class="info-banner__body">
-          Estás asignado como <strong>{{ rolLabel(rolYaElegido ?? '') }}</strong>
-          (proyecto #{{ proyectoYaElegidoId }}).
+          Tienes asignados {{ disponiblesData?.misRevisiones }} revisión(es) y {{ disponiblesData?.misAsesorias }} asesoría(s).
           Distribución equitativa: {{ limitePorDocente }} proyecto(s) por docente (Round(n/x)).
         </p>
       </div>
     </div>
 
-    <!-- Banner: aún puede elegir -->
-    <div *ngIf="!yaAlcanceLimite" class="info-banner info-banner--info">
+    <!-- Banner: aún puede elegir (revisor, asesor o ambos) -->
+    <div *ngIf="!(disponiblesData?.limiteRevisorAlcanzado && disponiblesData?.limiteAsesorAlcanzado)" class="info-banner info-banner--info">
       <i class="pi pi-info-circle info-banner__icon"></i>
       <div>
         <p class="info-banner__title">Distribución equitativa</p>
         <p class="info-banner__body">
-          Puedes elegir hasta <strong>{{ limitePorDocente }} proyecto(s)</strong> — como revisor de
-          anteproyecto (proyectos en revisión) o como asesor interno (proyectos en curso).
+          Límite actual: <strong>{{ disponiblesData?.limiteRevisor ?? 1 }} revisión(es)</strong> y
+          <strong>{{ disponiblesData?.limiteAsesor ?? 1 }} asesoría(s)</strong> por docente.
+          Tienes: {{ disponiblesData?.misRevisiones ?? 0 }} revisión(es) y {{ disponiblesData?.misAsesorias ?? 0 }} asesoría(s).
           El oficio se genera automáticamente al confirmar.
         </p>
       </div>
@@ -206,7 +242,7 @@
 
           <!-- Revisor de anteproyecto (estado 3) -->
           <ng-container *ngIf="p.idEstado === 3">
-            <button *ngIf="!p.yoSoyElAsignado && !yaAlcanceLimite"
+            <button *ngIf="!p.yoSoyElRevisor && !disponiblesData?.limiteRevisorAlcanzado"
               pButton
               type="button"
               label="Ser revisor de anteproyecto"
@@ -215,17 +251,17 @@
               class="w-full accion-btn"
               (click)="abrirConfirm(p, 'REVISOR_ANTEPROYECTO')">
             </button>
-            <div *ngIf="p.yoSoyElAsignado" class="ya-asignado ya-asignado--revisor">
+            <div *ngIf="p.yoSoyElRevisor" class="ya-asignado ya-asignado--revisor">
               <i class="pi pi-check"></i> Ya eres el revisor
             </div>
-            <div *ngIf="!p.yoSoyElAsignado && yaAlcanceLimite" class="no-disponible">
-              No disponible (ya elegiste)
+            <div *ngIf="!p.yoSoyElRevisor && disponiblesData?.limiteRevisorAlcanzado" class="no-disponible">
+              No disponible (ya cubriste tu cuota de revisiones)
             </div>
           </ng-container>
 
           <!-- Asesor interno (estado 6) -->
           <ng-container *ngIf="p.idEstado === 6">
-            <button *ngIf="!p.yoSoyElAsignado && !yaAlcanceLimite"
+            <button *ngIf="!p.yoSoyElAsesor && !disponiblesData?.limiteAsesorAlcanzado"
               pButton
               type="button"
               label="Ser asesor interno"
@@ -234,11 +270,11 @@
               class="w-full accion-btn"
               (click)="abrirConfirm(p, 'ASESOR_INTERNO')">
             </button>
-            <div *ngIf="p.yoSoyElAsignado" class="ya-asignado ya-asignado--asesor">
+            <div *ngIf="p.yoSoyElAsesor" class="ya-asignado ya-asignado--asesor">
               <i class="pi pi-check"></i> Ya eres el asesor
             </div>
-            <div *ngIf="!p.yoSoyElAsignado && yaAlcanceLimite" class="no-disponible">
-              No disponible (ya elegiste)
+            <div *ngIf="!p.yoSoyElAsesor && disponiblesData?.limiteAsesorAlcanzado" class="no-disponible">
+              No disponible (ya cubriste tu cuota de asesorías)
             </div>
           </ng-container>
 
