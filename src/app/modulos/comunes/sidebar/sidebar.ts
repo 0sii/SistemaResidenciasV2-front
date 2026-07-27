@@ -77,6 +77,7 @@ export class Sidebar implements OnInit, OnDestroy {
     // Si lo amarras a Proyecto, déjalo así:
     { label: 'Banco de Proyectos', icon: 'pi pi-folder-open', routerLink: '/repositorio', perms: ['Repositorio-Read'] },
     { label: 'Mis Proyectos (Docente)', icon: 'pi pi-briefcase', routerLink: '/docente/proyectos', perms: ['DocenteProyecto-Read'] },
+    { label: 'Oficios consolidados', icon: 'pi pi-file-pdf', routerLink: '/oficios-consolidados', perms: ['Proyecto-Update'] },
 
     { label: 'Seguimiento', icon: 'pi pi-folder-open', routerLink: '/seguimiento', perms: ['Seguimiento-Read'] },
     { label: 'Egresados', icon: 'pi pi-graduation-cap', routerLink: '/egresados', perms: ['Egresado-Read'] },

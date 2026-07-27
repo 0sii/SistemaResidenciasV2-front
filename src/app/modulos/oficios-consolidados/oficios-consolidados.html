@@ -1,0 +1,75 @@
+<p-toast></p-toast>
+
+<div class="oficios-container">
+
+  <div class="oficios-header">
+    <h2>Oficios consolidados por docente</h2>
+    <p class="oficios-subtitulo">
+      Genera, en un solo PDF, el oficio con <strong>todos los proyectos vigentes</strong> de un
+      docente para un rol determinado (aunque tenga varios proyectos asignados).
+    </p>
+  </div>
+
+  <div class="toolbar">
+    <span class="toolbar-label">Rol / tipo de oficio:</span>
+    <p-select
+      [options]="roles"
+      optionLabel="label"
+      optionValue="value"
+      [(ngModel)]="rolSeleccionado"
+      (onChange)="onRolChange()"
+      placeholder="Selecciona un rol"
+      styleClass="toolbar-select">
+    </p-select>
+  </div>
+
+  <div *ngIf="!rolSeleccionado" class="empty-msg">
+    Selecciona un rol para ver los docentes con proyectos asignados.
+  </div>
+
+  <div *ngIf="loading" class="loading-wrapper">
+    <p-progressSpinner></p-progressSpinner>
+  </div>
+
+  <p-table
+    *ngIf="rolSeleccionado && !loading"
+    [value]="docentes"
+    [paginator]="true"
+    [rows]="10"
+    [responsiveLayout]="'scroll'">
+
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Docente</th>
+        <th style="width:180px;">Proyectos asignados</th>
+        <th style="width:200px;">Acciones</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-row>
+      <tr>
+        <td>{{ row.nombre }}</td>
+        <td>{{ row.numProyectos }}</td>
+        <td>
+          <button pButton type="button"
+            [label]="estaGenerando(row.idDocente) ? 'Generando...' : 'Generar oficio'"
+            icon="pi pi-file-pdf"
+            severity="secondary"
+            [disabled]="estaGenerando(row.idDocente)"
+            (click)="generarOficio(row)">
+          </button>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="3" class="empty-msg">
+          No hay docentes con proyectos asignados en este rol.
+        </td>
+      </tr>
+    </ng-template>
+
+  </p-table>
+
+</div>

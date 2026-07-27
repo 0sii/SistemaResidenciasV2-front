@@ -336,6 +336,65 @@ export class ProyectosService {
     ) as Observable<HttpResponse<Blob>>;
   }
 
+  /**
+   * Oficio consolidado del docente logueado: junta TODOS sus proyectos
+   * vigentes para un rol (tipoClave) en un solo PDF.
+   * Pega a GET /Oficios/Regenerar (auto-servicio; el backend identifica
+   * al docente por el usuario autenticado, no acepta idDocente).
+   */
+  regenerarMiOficioConsolidado(
+    tipoClave: 'ASESOR_INTERNO' | 'REVISOR_ANTEPROYECTO' | 'REVISOR_RESIDENCIA'
+  ): Observable<HttpResponse<Blob>> {
+    const params = new HttpParams().set('tipoClave', tipoClave);
+
+    return this.http.get(
+      `${this.baseUrl}/Oficios/Regenerar`,
+      {
+        params,
+        headers: new HttpHeaders({ Accept: 'application/pdf' }),
+        responseType: 'blob' as 'json',
+        observe: 'response' as 'response'
+      }
+    ) as Observable<HttpResponse<Blob>>;
+  }
+
+  /**
+   * Oficio consolidado de CUALQUIER docente (uso del panel de la jefa de
+   * vinculación). Pega a GET /Oficios/RegenerarDeDocente?idDocente=&tipoClave=.
+   */
+  regenerarOficioConsolidadoDeDocente(
+    tipoClave: 'ASESOR_INTERNO' | 'REVISOR_ANTEPROYECTO' | 'REVISOR_RESIDENCIA',
+    idDocente: number
+  ): Observable<HttpResponse<Blob>> {
+    const params = new HttpParams()
+      .set('tipoClave', tipoClave)
+      .set('idDocente', idDocente);
+
+    return this.http.get(
+      `${this.baseUrl}/Oficios/RegenerarDeDocente`,
+      {
+        params,
+        headers: new HttpHeaders({ Accept: 'application/pdf' }),
+        responseType: 'blob' as 'json',
+        observe: 'response' as 'response'
+      }
+    ) as Observable<HttpResponse<Blob>>;
+  }
+
+  /**
+   * Lista de docentes con al menos un proyecto asignado en ese rol,
+   * junto con el conteo de proyectos. Usado en el panel de la jefa de
+   * vinculación para saber a quién generarle el oficio consolidado.
+   */
+  docentesConAsignacion(
+    tipoClave: 'ASESOR_INTERNO' | 'REVISOR_ANTEPROYECTO' | 'REVISOR_RESIDENCIA'
+  ): Observable<Array<{ idDocente: number; nombre: string; numProyectos: number }>> {
+    return this.http.get<Array<{ idDocente: number; nombre: string; numProyectos: number }>>(
+      `${this.baseUrl}/Oficios/PendientesPorDocente`,
+      { params: new HttpParams().set('tipoClave', tipoClave) }
+    );
+  }
+
   actualizarEstadoProyecto(idProyecto: number, idEstado: number): Observable<void> {
     return this.http.put<void>(`${this.baseUrl}/${idProyecto}`, {
       id: idProyecto,

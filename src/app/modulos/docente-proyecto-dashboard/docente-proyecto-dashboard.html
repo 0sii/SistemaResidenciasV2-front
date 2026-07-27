@@ -78,6 +78,30 @@
   <!-- ══════════════════════════════════════════════════════════════════ -->
   <div *ngIf="activeTab === 'asignados'" class="tab-content">
 
+    <!-- ── Mis oficios (consolidado: todos mis proyectos de ese rol en un PDF) ── -->
+    <div *ngIf="misRolesConOficio.length > 0" class="mis-oficios-box">
+      <p class="mis-oficios-titulo">
+        <i class="pi pi-file-pdf"></i> Mis oficios
+      </p>
+      <p class="mis-oficios-nota">
+        Descarga el oficio con todos tus proyectos vigentes para cada rol (un solo PDF por rol).
+      </p>
+      <div class="mis-oficios-lista">
+        <div *ngFor="let r of misRolesConOficio" class="mis-oficios-item">
+          <span class="mis-oficios-item__label">
+            {{ r.label }} <span class="mis-oficios-item__cantidad">({{ r.cantidad }} proyecto(s))</span>
+          </span>
+          <button pButton type="button"
+            [label]="generandoOficioRol[r.clave] ? 'Generando...' : 'Descargar oficio'"
+            icon="pi pi-download"
+            severity="secondary"
+            [disabled]="generandoOficioRol[r.clave]"
+            (click)="descargarMiOficio(r.clave)">
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="toolbar">
       <span class="toolbar-label">Filtrar por responsabilidad:</span>
       <p-select

@@ -161,6 +161,15 @@ export const routes: Routes = [
 
 
   {
+    path: 'oficios-consolidados',
+    canActivate: [AuthGuard, PermissionGuard],
+    data: { permiso: 'Proyecto-Update' }, // mismo permiso que ya tiene la jefa de vinculación en /proyectos
+    loadComponent: () =>
+      import('./modulos/oficios-consolidados/oficios-consolidados')
+        .then(m => m.OficiosConsolidados),
+  },
+
+  {
     path: 'egresados',
     component: EgresadosComponent,
     canActivate: [AuthGuard, PermissionGuard],

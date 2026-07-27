@@ -1,0 +1,48 @@
+.oficios-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 1.5rem;
+}
+
+.oficios-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.25rem;
+}
+
+.oficios-subtitulo {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-bottom: 1.25rem;
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.toolbar-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #334155;
+}
+
+.toolbar-select {
+    min-width: 320px;
+}
+
+.loading-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 2rem 0;
+}
+
+.empty-msg {
+    text-align: center;
+    color: #94a3b8;
+    padding: 1.5rem 0;
+    font-size: 0.875rem;
+}
