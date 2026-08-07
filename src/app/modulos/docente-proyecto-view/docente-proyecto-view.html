@@ -182,6 +182,17 @@
                   </button> -->
                         }
 
+                        <!-- Descargar PDF de Aceptación de Anteproyecto (disponible desde estado 6+) -->
+                        @if((data?.proyecto?.idEstado ?? data?.proyecto?.IdEstado) >= 6 && (data?.proyecto?.idEstado ?? data?.proyecto?.IdEstado) !== 9) {
+                        <button pButton icon="pi pi-download"
+                          class="p-button-outlined p-button-success"
+                          label="Aceptación Anteproyecto (PDF)"
+                          pTooltip="Descargar el documento de aceptación del anteproyecto"
+                          [disabled]="descargandoAceptacionPdf"
+                          (click)="descargarAceptacionAnteproyecto()">
+                        </button>
+                        }
+
                         @if(
                         canRevisarAnteproyecto() &&
                         anteproyectoCerrado &&

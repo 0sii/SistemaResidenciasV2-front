@@ -202,6 +202,11 @@ export class ProyectosService {
     return this.http.post<any>(url, {});
   }
 
+  descargarAceptacionAnteproyecto(idProyecto: number) {
+    const url = `${environment.ConstantsService.apiUrl}/entregables/${idProyecto}/Aceptacion/Descargar`;
+    return this.http.get(url, { responseType: 'blob' });
+  }
+
   cancelarProyecto(idProyecto: number) {
     const url = `${environment.ConstantsService.apiUrl}/entregables/${idProyecto}/Cancelar`;
     return this.http.post<any>(url, {});

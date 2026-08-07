@@ -194,6 +194,26 @@ private cdr = inject(ChangeDetectorRef);
 
   proyectoAceptando = false;
   proyectoCancelando = false;
+  descargandoAceptacionPdf = false;
+
+  descargarAceptacionAnteproyecto(): void {
+    this.descargandoAceptacionPdf = true;
+    this.proyectosSvc.descargarAceptacionAnteproyecto(this.idProyecto)
+      .pipe(finalize(() => (this.descargandoAceptacionPdf = false)))
+      .subscribe({
+        next: (blob: Blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `Aceptacion_Anteproyecto_${this.idProyecto}.pdf`;
+          a.click();
+          URL.revokeObjectURL(url);
+        },
+        error: () => {
+          this.toast.add({ severity: 'warn', summary: 'No disponible', detail: 'El documento aún no ha sido generado.', life: 5000 });
+        }
+      });
+  }
 
   // ✅ Para banner de cancelación (heurística por texto)
   proyectoEstadoLabel: string = '';

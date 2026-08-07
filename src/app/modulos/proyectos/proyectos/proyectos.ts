@@ -3854,15 +3854,50 @@ firmaCargoLinea1: ''
     if (!p) return;
 
     this.proyectosSvc.aceptarProyecto(p.id).subscribe({
-      next: () => {
-        this.showSuccess('Proyecto aceptado.');
-        if (this.detallesProyecto) this.detallesProyecto.idEstado = this.ESTADO_ESPERA_ASESOR_ID; // 6
+      next: (res: any) => {
+        this.showSuccess('Proyecto aceptado. Se generó el documento de aceptación y se notificó por correo.');
+        if (this.detallesProyecto) this.detallesProyecto.idEstado = this.ESTADO_ESPERA_ASESOR_ID;
         this.loadProyectos();
         this.cdr.detectChanges();
+
+        // Descargar PDF automáticamente si el servidor lo generó
+        if (res?.pdfDisponible) {
+          this.proyectosSvc.descargarAceptacionAnteproyecto(p.id).subscribe({
+            next: (blob: Blob) => {
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `Aceptacion_Anteproyecto_${p.id}.pdf`;
+              a.click();
+              URL.revokeObjectURL(url);
+            },
+            error: () => { /* sin descarga automática, disponible en botón */ }
+          });
+        }
       },
       error: (e) => {
         console.error(e);
         this.showError(e?.error || e?.message || 'No se pudo aceptar el proyecto.');
+      }
+    });
+  }
+
+  descargandoAceptacion = false;
+  descargarAceptacionAnteproyecto(idProyecto: number): void {
+    this.descargandoAceptacion = true;
+    this.proyectosSvc.descargarAceptacionAnteproyecto(idProyecto).subscribe({
+      next: (blob: Blob) => {
+        this.descargandoAceptacion = false;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Aceptacion_Anteproyecto_${idProyecto}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.descargandoAceptacion = false;
+        this.showError('No se encontró el documento de aceptación.');
       }
     });
   }
