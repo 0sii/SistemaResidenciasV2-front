@@ -230,7 +230,7 @@
             <input type="text" formControlName="nombre"
               class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
             @if(f['nombre'].invalid && (f['nombre'].dirty || f['nombre'].touched)) {
-            <small class="text-red-500">El nombre es obligatorio.</small>
+            <small class="text-red-500">El nombre es obligatorio (para Estudiante, solo letras).</small>
             }
           </div>
 
@@ -239,7 +239,7 @@
             <input type="text" formControlName="apellidoPaterno"
               class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
             @if(f['apellidoPaterno'].invalid && (f['apellidoPaterno'].dirty || f['apellidoPaterno'].touched)) {
-            <small class="text-red-500">El apellido paterno es obligatorio.</small>
+            <small class="text-red-500">El apellido paterno es obligatorio (para Estudiante, solo letras).</small>
             }
           </div>
 
@@ -247,6 +247,9 @@
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Apellido Materno</label>
             <input type="text" formControlName="apellidoMaterno"
               class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md" />
+            @if(f['apellidoMaterno'].invalid && (f['apellidoMaterno'].dirty || f['apellidoMaterno'].touched)) {
+            <small class="text-red-500">Para Estudiante es obligatorio y solo debe llevar letras.</small>
+            }
           </div>
 
           <div>

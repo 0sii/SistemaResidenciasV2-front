@@ -100,6 +100,13 @@
             </small>
           </div>
 
+          <div>
+            <label class="block text-sm font-medium">No. consecutivo inicial de oficios (opcional)</label>
+            <input type="number" min="1" formControlName="consecutivoOficio" placeholder="Ej. 110 (vacío = 1)"
+              class="p-2 w-full border rounded-md dark:bg-gray-800 dark:border-gray-600" />
+            <small class="text-gray-400">Es el número del primer oficio que se generará en este período.</small>
+          </div>
+
           <div class="flex items-center gap-2">
             <p-checkbox formControlName="activo" [binary]="true"></p-checkbox>
             <span>Marcar como período activo</span>
@@ -208,10 +215,14 @@
                 <div>
                   <div class="font-medium">No. consecutivo de oficio</div>
                   <div class="text-xs text-gray-400 mt-1">
-                    Úsalo para bajar el número si unos documentos salieron mal, o fijarlo a un valor específico.
+                    Es el número del siguiente oficio que se generará. Cámbialo para continuar tu cuenta (ej. 110) o corregirla.
                   </div>
                 </div>
 
+                <button type="button" (click)="toggleResetConsecutivo()"
+                  class="shrink-0 border rounded-md py-1 px-3 text-sm hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700">
+                  {{ resetConsecutivo ? 'Cancelar' : 'Modificar' }}
+                </button>
               </div>
 
               <div class="mt-3">
@@ -280,7 +291,7 @@
       [style]="{width: '80vw', height: '80vh'}" [draggable]="false" [resizable]="false" (onHide)="liberarPdfUrl()"
       [dismissableMask]="true">
 
-      <ngx-extended-pdf-viewer *ngIf="pdfUrl" [src]="pdfUrl" height="100%" [showToolbar]="true"
+      <ngx-extended-pdf-viewer *ngIf="pdfUrl && pdfData" [src]="pdfData" height="100%" [showToolbar]="true"
         [showSidebarButton]="false" [showFindButton]="false" [showOpenFileButton]="false" [showPrintButton]="false"
         [showDownloadButton]="true" [showPresentationModeButton]="false" [showRotateButton]="false"
         [showHandToolButton]="false" [showSpreadButton]="false" [showPropertiesButton]="false" [textLayer]="false"

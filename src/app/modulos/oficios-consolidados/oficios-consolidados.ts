@@ -14,6 +14,13 @@ import { MessageService } from 'primeng/api';
 import { ProyectosService } from '../../service/proyectos.service';
 
 type TipoRelacionOficio = 'REVISOR_ANTEPROYECTO' | 'ASESOR_INTERNO' | 'REVISOR_RESIDENCIA';
+type RolSeleccion = TipoRelacionOficio | 'ACEPTACION';
+
+interface ProyectoAceptacion {
+  idProyecto: number;
+  titulo: string;
+  integrantes: string;
+}
 
 interface DocenteConAsignacion {
   idDocente: number;
@@ -43,13 +50,17 @@ export class OficiosConsolidados {
   private toast            = inject(MessageService);
   private cdr              = inject(ChangeDetectorRef);
 
-  roles: Array<{ label: string; value: TipoRelacionOficio }> = [
-    { label: 'Revisor de reporte preliminar (anteproyecto)', value: 'REVISOR_ANTEPROYECTO' },
-    { label: 'Asesor interno',                               value: 'ASESOR_INTERNO' },
-    { label: 'Revisor de residencia',                        value: 'REVISOR_RESIDENCIA' },
+  roles: Array<{ label: string; value: RolSeleccion }> = [
+    { label: 'Asesor interno (un oficio por alumno)',                     value: 'ASESOR_INTERNO' },
+    { label: 'Revisor de reporte preliminar (un oficio por proyecto)',    value: 'REVISOR_ANTEPROYECTO' },
+    { label: 'Revisor de residencia (todos los proyectos del docente)',   value: 'REVISOR_RESIDENCIA' },
+    { label: 'Aceptación de reporte preliminar (una por proyecto)',       value: 'ACEPTACION' },
   ];
 
-  rolSeleccionado: TipoRelacionOficio | null = null;
+  rolSeleccionado: RolSeleccion | null = null;
+
+  proyectosAceptacion: ProyectoAceptacion[] = [];
+  generandoAceptacion = new Set<number>();
 
   loading   = false;
   docentes: DocenteConAsignacion[] = [];
@@ -58,6 +69,7 @@ export class OficiosConsolidados {
 
   onRolChange(): void {
     this.docentes = [];
+    this.proyectosAceptacion = [];
     if (!this.rolSeleccionado) return;
     this.cargar();
   }
@@ -65,6 +77,18 @@ export class OficiosConsolidados {
   cargar(): void {
     if (!this.rolSeleccionado) return;
     this.loading = true;
+
+    if (this.rolSeleccionado === 'ACEPTACION') {
+      this.proyectosService.proyectosConAceptacion()
+        .pipe(finalize(() => { this.loading = false; this.cdr.markForCheck(); }))
+        .subscribe({
+          next: (data) => { this.proyectosAceptacion = data ?? []; },
+          error: () => {
+            this.toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar la lista de proyectos.', life: 8000 });
+          }
+        });
+      return;
+    }
 
     this.proyectosService.docentesConAsignacion(this.rolSeleccionado)
       .pipe(finalize(() => { this.loading = false; this.cdr.markForCheck(); }))
@@ -98,8 +122,35 @@ export class OficiosConsolidados {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  estaGenerandoAceptacion(idProyecto: number): boolean {
+    return this.generandoAceptacion.has(idProyecto);
+  }
+
+  generarAceptacion(p: ProyectoAceptacion): void {
+    this.generandoAceptacion.add(p.idProyecto);
+    this.cdr.markForCheck();
+
+    this.proyectosService.descargarAceptacionAnteproyecto(p.idProyecto)
+      .pipe(finalize(() => {
+        this.generandoAceptacion.delete(p.idProyecto);
+        this.cdr.markForCheck();
+      }))
+      .subscribe({
+        next: (blob: Blob) => {
+          if (blob && blob.size > 0) {
+            this.descargarPdf(blob, `Aceptacion_Reporte_Preliminar_${p.idProyecto}.pdf`);
+            this.toast.add({ severity: 'success', summary: 'Documento generado', detail: 'Se descargó la aceptación del reporte preliminar.', life: 5000 });
+          }
+        },
+        error: (err: any) => {
+          const msg = typeof err?.error === 'string' ? err.error : 'No se pudo generar la aceptación.';
+          this.toast.add({ severity: 'error', summary: 'Error', detail: msg, life: 8000 });
+        }
+      });
+  }
+
   generarOficio(docente: DocenteConAsignacion): void {
-    if (!this.rolSeleccionado) return;
+    if (!this.rolSeleccionado || this.rolSeleccionado === 'ACEPTACION') return;
 
     this.generandoPorDocente.add(docente.idDocente);
     this.cdr.markForCheck();

@@ -733,7 +733,7 @@
     <!-- visor pdf -->
     <p-dialog header="Visualizando PDF" [(visible)]="displayDialog" [modal]="true" [closable]="true"
       [style]="{width: '80vw'}">
-      <ngx-extended-pdf-viewer *ngIf="pdfUrl" [src]="pdfUrl" height="75vh" [showToolbar]="true"
+      <ngx-extended-pdf-viewer *ngIf="pdfUrl && pdfData" [src]="pdfData" height="75vh" [showToolbar]="true"
         [showSidebarButton]="false" [showFindButton]="false" [showOpenFileButton]="false" [showPrintButton]="false"
         [showDownloadButton]="true" [showPresentationModeButton]="false" [showRotateButton]="false"
         [showHandToolButton]="false" [showSpreadButton]="false" [showPropertiesButton]="false" [textLayer]="false"

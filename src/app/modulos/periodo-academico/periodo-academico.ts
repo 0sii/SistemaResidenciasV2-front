@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { FormBuilder, FormGroup, Validators, AbstractControl } from '@angular/forms';
 import { MessageService } from 'primeng/api';
@@ -74,7 +74,11 @@ export class PeriodoAcademico implements OnInit, OnDestroy {
   @ViewChild('createMemInput') createMemInputRef!: ElementRef<HTMLInputElement>;
 
   pdfUrl: string | null = null;
+  // Bytes del PDF: se pasan al visor para que pdf.js no tenga que leer una URL blob: (bloqueada por la CSP)
+  pdfData: Uint8Array | null = null;
   displayDialog: boolean = false;
+
+  private cdr = inject(ChangeDetectorRef);
 
   constructor(
     private fb: FormBuilder,
@@ -89,6 +93,8 @@ export class PeriodoAcademico implements OnInit, OnDestroy {
       fechaFin: ['', Validators.required],
       activo: [true],
       jefeDepartamentoNombre: ['', [Validators.required, Validators.minLength(5)]],
+      // opcional: número con el que empieza la cuenta de oficios (vacío = 1)
+      consecutivoOficio: [null, [Validators.min(1)]],
     }, { validators: this.fechaRangoValidator });
 
     this.editForm = this.fb.group({
@@ -207,6 +213,7 @@ export class PeriodoAcademico implements OnInit, OnDestroy {
     const payload = { ...this.createForm.value };
     payload.nombre = String(payload.nombre).trim();
     payload.jefeDepartamentoNombre = String(payload.jefeDepartamentoNombre).trim();
+    payload.consecutivoOficio = payload.consecutivoOficio ? Number(payload.consecutivoOficio) : null;
 
     this.periodosSvc.create(payload).subscribe({
       next: (periodoCreado) => {
@@ -426,17 +433,23 @@ export class PeriodoAcademico implements OnInit, OnDestroy {
     this.periodosSvc.downloadMembrentado(this.selectedPeriodo.id).subscribe({
       next: (blob: Blob) => {
         if (!blob) return;
-        if (blob.type !== 'application/pdf') {
+        const tipo = (blob.type || '').toLowerCase();
+        if (tipo !== 'application/pdf' && tipo !== '' && tipo !== 'application/octet-stream') {
           this.messageService.add({ severity: 'error', summary: 'Archivo inválido', detail: 'No es PDF.', life: 10000 });
           return;
         }
-        const fileSizeInMB = blob.size / (1024 * 1024);
+        const pdfBlob = tipo === 'application/pdf' ? blob : new Blob([blob], { type: 'application/pdf' });
+        const fileSizeInMB = pdfBlob.size / (1024 * 1024);
         if (fileSizeInMB > 15) {
           this.messageService.add({ severity: 'warn', summary: 'Archivo grande', detail: 'Demasiado grande para visor.', life: 10000 });
           return;
         }
-        this.pdfUrl = URL.createObjectURL(blob);
+        this.pdfUrl = URL.createObjectURL(pdfBlob);
+        this.pdfData = null;
+        pdfBlob.arrayBuffer().then(buf => { this.pdfData = new Uint8Array(buf); this.cdr.markForCheck(); });
         this.displayDialog = true;
+        // App zoneless: notificar el cambio para evitar NG0100
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error(err);

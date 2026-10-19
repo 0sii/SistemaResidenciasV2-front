@@ -101,6 +101,8 @@ export class Candidadatos implements OnInit {
   // VISOR PDF (igual que Perfil)
   // =========================
   pdfUrl: string | null = null;
+  // Bytes del PDF: se pasan al visor para que pdf.js no tenga que leer una URL blob: (bloqueada por la CSP)
+  pdfData: Uint8Array | null = null;
   pdfTitle: string = '';
   displayDialog: boolean = false; // si tu template usa "displayDialog"
   showPdfDialog: boolean = false; // si tu template usa "showPdfDialog" (deja el que uses)
@@ -1144,6 +1146,8 @@ this.proyectosSvc.finalizarProyecto(
       if (this.pdfUrl) URL.revokeObjectURL(this.pdfUrl);
 
       this.pdfUrl = URL.createObjectURL(blob);
+      this.pdfData = null;
+      blob.arrayBuffer().then(buf => { this.pdfData = new Uint8Array(buf); this.cdr.markForCheck(); });
       this.displayDialog = true;
 
       queueMicrotask(() => this.cdr.detectChanges());
@@ -1217,6 +1221,8 @@ this.proyectosSvc.finalizarProyecto(
 
       // 👉 Igual que Perfil: Blob URL en string
       this.pdfUrl = URL.createObjectURL(blob);
+      this.pdfData = null;
+      blob.arrayBuffer().then(buf => { this.pdfData = new Uint8Array(buf); this.cdr.markForCheck(); });
 
       // Abre dialog
       this.displayDialog = true;
@@ -1269,6 +1275,8 @@ this.proyectosSvc.finalizarProyecto(
       if (this.pdfUrl) URL.revokeObjectURL(this.pdfUrl);
 
       this.pdfUrl = URL.createObjectURL(blob);
+      this.pdfData = null;
+      blob.arrayBuffer().then(buf => { this.pdfData = new Uint8Array(buf); this.cdr.markForCheck(); });
       this.pdfTitle = doc?.nombreOriginal || 'Documento';
       this.displayDialog = true;
 
@@ -2354,8 +2362,15 @@ this.proyectosSvc.finalizarProyecto(
 
 
   enviarCorreo(correo: string, password: string, _okMessage: string) {
-    const tema = 'Credenciales para Vinculación de Proyectos';
-    const cuerpo = `Su contraseña temporal es: ${password}`;
+    const tema = 'Acceso al Sistema de Residencias';
+    const cuerpo = `
+    <p>Hola,</p>
+    <p>Tu acceso al <b>Sistema de Residencias</b> ha sido creado.</p>
+    <p><b>Usuario:</b> ${String(correo || '').trim().toLowerCase()}</p>
+    <p><b>Contraseña temporal:</b> ${password}</p>
+    <p>Te recomendamos cambiar tu contraseña al ingresar.</p>
+    <p style="margin-top:16px;">Saludos.<br/>Sistema de Vinculación y Residencias</p>
+  `;
 
     this.emailService.sendEmail(correo, tema, cuerpo).subscribe({
       next: () => {

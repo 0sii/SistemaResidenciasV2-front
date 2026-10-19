@@ -11,13 +11,13 @@
       <p class="confirm-periodo">Periodo: {{ proyectoSeleccionado.periodoNombre ?? '—' }}</p>
     </div>
     <p class="confirm-nota">
-      Al confirmar se registrará tu asignación y se descargará automáticamente el oficio PDF.
+      Al confirmar se registrará tu asignación. El oficio lo genera el estudiante o la jefa de vinculación.
     </p>
   </div>
   <ng-template pTemplate="footer">
     <button pButton label="Cancelar" severity="secondary" [disabled]="asignando"
       (click)="showConfirmDialog = false" class="mr-2"></button>
-    <button pButton [label]="asignando ? 'Procesando...' : 'Confirmar y descargar oficio'"
+    <button pButton [label]="asignando ? 'Procesando...' : 'Confirmar asignación'"
       severity="success" [disabled]="asignando" (click)="confirmarAutoAsignacion()">
     </button>
   </ng-template>
@@ -77,30 +77,6 @@
   <!-- Pestaña: Mis proyectos asignados                                  -->
   <!-- ══════════════════════════════════════════════════════════════════ -->
   <div *ngIf="activeTab === 'asignados'" class="tab-content">
-
-    <!-- ── Mis oficios (consolidado: todos mis proyectos de ese rol en un PDF) ── -->
-    <div *ngIf="misRolesConOficio.length > 0" class="mis-oficios-box">
-      <p class="mis-oficios-titulo">
-        <i class="pi pi-file-pdf"></i> Mis oficios
-      </p>
-      <p class="mis-oficios-nota">
-        Descarga el oficio con todos tus proyectos vigentes para cada rol (un solo PDF por rol).
-      </p>
-      <div class="mis-oficios-lista">
-        <div *ngFor="let r of misRolesConOficio" class="mis-oficios-item">
-          <span class="mis-oficios-item__label">
-            {{ r.label }} <span class="mis-oficios-item__cantidad">({{ r.cantidad }} proyecto(s))</span>
-          </span>
-          <button pButton type="button"
-            [label]="generandoOficioRol[r.clave] ? 'Generando...' : 'Descargar oficio'"
-            icon="pi pi-download"
-            severity="secondary"
-            [disabled]="generandoOficioRol[r.clave]"
-            (click)="descargarMiOficio(r.clave)">
-          </button>
-        </div>
-      </div>
-    </div>
 
     <div class="toolbar">
       <span class="toolbar-label">Filtrar por responsabilidad:</span>
@@ -219,7 +195,6 @@
           Límite actual: <strong>{{ disponiblesData?.limiteRevisor ?? 1 }} revisión(es)</strong> y
           <strong>{{ disponiblesData?.limiteAsesor ?? 1 }} asesoría(s)</strong> por docente.
           Tienes: {{ disponiblesData?.misRevisiones ?? 0 }} revisión(es) y {{ disponiblesData?.misAsesorias ?? 0 }} asesoría(s).
-          El oficio se genera automáticamente al confirmar.
         </p>
       </div>
     </div>

@@ -319,41 +319,33 @@ export class ProyectosService {
   }
 
   /**
-   * El docente logueado se asigna como asesor o revisor del proyecto
-   * y recibe el oficio PDF generado automáticamente.
-   * Usa observe: 'response' para acceder a headers (Content-Disposition)
-   * y responseType: 'blob' para recibir el PDF binario.
-   * Si el backend devuelve JSON (sin PDF), el error handler en el componente
-   * lo lee con FileReader.
+   * El docente logueado se asigna como asesor o revisor del proyecto.
+   * Ya NO devuelve ningún oficio: los docentes no generan oficios
+   * (los generan el estudiante o la jefa de vinculación).
    */
-  autoAsignarme(idProyecto: number, tipoClave: 'ASESOR_INTERNO' | 'REVISOR_ANTEPROYECTO'): Observable<HttpResponse<Blob>> {
-    // HttpClient overload typings make `responseType: 'blob'` incompatible with some generics.
-    // Use a cast to satisfy the compiler and return the full HttpResponse<Blob>.
-    return this.http.post(
+  autoAsignarme(idProyecto: number, tipoClave: 'ASESOR_INTERNO' | 'REVISOR_ANTEPROYECTO'): Observable<any> {
+    return this.http.post<any>(
       `${this.baseUrl}/${idProyecto}/autoasignarme`,
-      { tipoClave },
-      {
-        headers: new HttpHeaders({ Accept: 'application/pdf' }),
-        // cast to 'json' to match overload signature, then cast result to Observable<HttpResponse<Blob>>
-        responseType: 'blob' as 'json',
-        observe: 'response' as 'response'
-      }
-    ) as Observable<HttpResponse<Blob>>;
+      { tipoClave }
+    );
   }
 
   /**
-   * Oficio consolidado del docente logueado: junta TODOS sus proyectos
-   * vigentes para un rol (tipoClave) en un solo PDF.
-   * Pega a GET /Oficios/Regenerar (auto-servicio; el backend identifica
-   * al docente por el usuario autenticado, no acepta idDocente).
+   * Oficio de asignación de un proyecto para un rol. Lo usan el estudiante
+   * del proyecto (desde Seguimiento) y la jefa de vinculación.
+   * GET /Proyectos/{idProyecto}/Oficios/Asignacion?tipoClave=
+   *   ASESOR_INTERNO       → oficio de asesor interno
+   *   REVISOR_RESIDENCIA   → oficio de revisor
+   *   REVISOR_ANTEPROYECTO → oficio de asignación de revisor del reporte preliminar
    */
-  regenerarMiOficioConsolidado(
+  descargarOficioAsignacion(
+    idProyecto: number,
     tipoClave: 'ASESOR_INTERNO' | 'REVISOR_ANTEPROYECTO' | 'REVISOR_RESIDENCIA'
   ): Observable<HttpResponse<Blob>> {
     const params = new HttpParams().set('tipoClave', tipoClave);
 
     return this.http.get(
-      `${this.baseUrl}/Oficios/Regenerar`,
+      `${this.baseUrl}/${idProyecto}/Oficios/Asignacion`,
       {
         params,
         headers: new HttpHeaders({ Accept: 'application/pdf' }),
@@ -397,6 +389,16 @@ export class ProyectosService {
     return this.http.get<Array<{ idDocente: number; nombre: string; numProyectos: number }>>(
       `${this.baseUrl}/Oficios/PendientesPorDocente`,
       { params: new HttpParams().set('tipoClave', tipoClave) }
+    );
+  }
+
+  /**
+   * Proyectos con reporte preliminar aceptado (para que la jefa de vinculación
+   * descargue la Aceptación de cada uno). GET /Proyectos/Oficios/ProyectosAceptacion
+   */
+  proyectosConAceptacion(): Observable<Array<{ idProyecto: number; titulo: string; integrantes: string }>> {
+    return this.http.get<Array<{ idProyecto: number; titulo: string; integrantes: string }>>(
+      `${this.baseUrl}/Oficios/ProyectosAceptacion`
     );
   }
 

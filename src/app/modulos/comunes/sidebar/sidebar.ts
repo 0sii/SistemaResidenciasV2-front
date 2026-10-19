@@ -24,6 +24,7 @@ type MenuCfg = {
   icon: string;
   routerLink: string;
   perms?: string[]; // si está vacío/undefined => siempre visible
+  soloEstudiante?: boolean;
 };
 
 @Component({
@@ -64,6 +65,7 @@ export class Sidebar implements OnInit, OnDestroy {
 
   private menuConfig: MenuCfg[] = [
     { label: 'Página Principal', icon: 'pi pi-home', routerLink: '/dashboard' },
+    { label: 'Mi Expediente', icon: 'pi pi-folder-open', routerLink: '/expediente', soloEstudiante: true },
 
     // Mostrar si tiene CUALQUIERA de estos permisos (por si algún rol solo tiene Create/Update)
     { label: 'Estudiantes', icon: 'pi pi-users', routerLink: '/estudiantes', perms: ['Estudiante-Read', 'Estudiante-Create', 'Estudiante-Update'] },
@@ -136,7 +138,12 @@ export class Sidebar implements OnInit, OnDestroy {
         const okPerm = this.usuariosSvc.hasAnyPermission(cfg.perms ?? []);
         if (!okPerm) return false;
 
-        // ✅ condición extra SOLO para Seguimiento
+        // Solo estudiantes pueden acceder al apartado de expediente.
+        if (cfg.soloEstudiante) {
+          return this.seguimientoHabilitado === true;
+        }
+
+        // condición extra SOLO para Seguimiento
         if (cfg.routerLink === '/seguimiento') {
           return this.seguimientoHabilitado === true;
         }

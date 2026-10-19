@@ -887,7 +887,14 @@ private actualizarDocente(
 
 
         const subject = 'Acceso al Sistema de Residencias';
-        const body = `Su contraseña temporal es: ${tempPass}`;
+        const body = `
+          <p>Hola,</p>
+          <p>Tu acceso al <b>Sistema de Residencias</b> ha sido creado.</p>
+          <p><b>Usuario:</b> ${correo}</p>
+          <p><b>Contraseña temporal:</b> ${tempPass}</p>
+          <p>Te recomendamos cambiar tu contraseña al ingresar.</p>
+          <p style="margin-top:16px;">Saludos.<br/>Sistema de Vinculación y Residencias</p>
+        `;
 
         // 6) flujo principal
         // 6) flujo principal

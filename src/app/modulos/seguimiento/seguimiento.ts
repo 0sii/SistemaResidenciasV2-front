@@ -515,6 +515,8 @@ export class Seguimiento implements OnInit {
 
 
   pdfUrl: string | null = null;
+  // Bytes del PDF: se pasan al visor para que pdf.js no tenga que leer una URL blob: (bloqueada por la CSP)
+  pdfData: Uint8Array | null = null;
   displayDialog: boolean = false;
   pdfFileName: string | null = null;
 
@@ -853,6 +855,8 @@ export class Seguimiento implements OnInit {
           }
 
           this.pdfUrl = URL.createObjectURL(blob);
+          this.pdfData = null;
+          blob.arrayBuffer().then(buf => { this.pdfData = new Uint8Array(buf); this.cdr.markForCheck(); });
           this.displayDialog = true;
           return;
         }
@@ -898,6 +902,8 @@ export class Seguimiento implements OnInit {
         }
 
         this.pdfUrl = URL.createObjectURL(blob);
+        this.pdfData = null;
+        blob.arrayBuffer().then(buf => { this.pdfData = new Uint8Array(buf); this.cdr.markForCheck(); });
         this.displayDialog = true;
       },
       error: (e) => {
@@ -2104,6 +2110,113 @@ export class Seguimiento implements OnInit {
   }
 
 
+
+  // ══════════════════════════════════════════════════════════════════
+  // 📄 Oficios del estudiante
+  // Solo el estudiante (y la jefa de vinculación) generan estos documentos.
+  // Los docentes NO tienen manera de generarlos.
+  // ══════════════════════════════════════════════════════════════════
+  generandoOficio: Record<string, boolean> = {};
+
+  get oficioAsesorDisponible(): boolean {
+    return !!(this.asesorInternoNombre && this.asesorInternoNombre.trim().length);
+  }
+
+  get oficioRevisorAnteproyectoDisponible(): boolean {
+    return this.revisorAnteproyectoAsignado;
+  }
+
+  get oficioRevisorResidenciaDisponible(): boolean {
+    return !!(this.revisorResidenciaNombre && this.revisorResidenciaNombre.trim().length);
+  }
+
+  /** La aceptación del reporte preliminar existe desde estado 6 (Espera asignando asesor). */
+  get oficioAceptacionDisponible(): boolean {
+    const estado = Number(this.proyectoIdEstado ?? 0);
+    return estado >= this.ESTADO_DESDE_EXIGIR_DATOS && estado !== this.ESTADO_CANCELADO;
+  }
+
+  private guardarBlobComoArchivo(blob: Blob, nombre: string): void {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nombre;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  private mostrarErrorOficio(err: any, mensajePorDefecto: string): void {
+    const mostrar = (msg: string) => {
+      this.toast.add({ severity: 'warn', summary: 'No se pudo generar', detail: msg, life: 8000 });
+      this.cdr.markForCheck();
+    };
+
+    // El backend responde el error como texto/JSON, pero con responseType blob llega como Blob.
+    if (err?.error instanceof Blob) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        let msg = mensajePorDefecto;
+        const txt = (reader.result as string) || '';
+        try {
+          const json = JSON.parse(txt);
+          msg = (typeof json === 'string' ? json : json?.message ?? json?.title) || msg;
+        } catch {
+          msg = txt || msg;
+        }
+        mostrar(msg);
+      };
+      reader.readAsText(err.error);
+      return;
+    }
+
+    mostrar(typeof err?.error === 'string' ? err.error : (err?.error?.message ?? mensajePorDefecto));
+  }
+
+  /** Oficio de asesor interno / revisor de residencia / asignación de revisor de reporte preliminar. */
+  descargarOficio(clave: 'ASESOR_INTERNO' | 'REVISOR_ANTEPROYECTO' | 'REVISOR_RESIDENCIA'): void {
+    if (!this.idProyecto) return;
+
+    this.generandoOficio[clave] = true;
+    this.cdr.markForCheck();
+
+    this.proyectosSvc.descargarOficioAsignacion(this.idProyecto, clave)
+      .pipe(finalize(() => { this.generandoOficio[clave] = false; this.cdr.markForCheck(); }))
+      .subscribe({
+        next: (res) => {
+          if (res.body instanceof Blob && res.body.size > 0) {
+            const cd = res.headers?.get('Content-Disposition') ?? '';
+            const match = cd.match(/filename\*?=(?:UTF-8'')?["']?([^"';\n]*)["']?/i);
+            const nombre = match?.[1]?.trim() || `Oficio_${clave}.pdf`;
+            this.guardarBlobComoArchivo(res.body, nombre);
+            this.toast.add({ severity: 'success', summary: 'Oficio generado', detail: 'Se descargó el oficio.', life: 5000 });
+          }
+        },
+        error: (err) => this.mostrarErrorOficio(err, 'No se pudo generar el oficio.')
+      });
+  }
+
+  /** Aceptación del reporte preliminar (anteproyecto). */
+  descargarAceptacionReportePreliminar(): void {
+    if (!this.idProyecto) return;
+
+    this.generandoOficio['ACEPTACION'] = true;
+    this.cdr.markForCheck();
+
+    this.proyectosSvc.descargarAceptacionAnteproyecto(this.idProyecto)
+      .pipe(finalize(() => { this.generandoOficio['ACEPTACION'] = false; this.cdr.markForCheck(); }))
+      .subscribe({
+        next: (blob: Blob) => {
+          if (blob && blob.size > 0) {
+            this.guardarBlobComoArchivo(blob, `Aceptacion_Reporte_Preliminar_${this.idProyecto}.pdf`);
+            this.toast.add({ severity: 'success', summary: 'Documento generado', detail: 'Se descargó la aceptación del reporte preliminar.', life: 5000 });
+          }
+        },
+        error: (err) => this.mostrarErrorOficio(err, 'El documento de aceptación aún no está disponible.')
+      });
+  }
 
   /** Trae el revisor asignado al anteproyecto desde tu ProyectosService */
   private cargarRevisorAnteproyecto(idProyecto: number): void {

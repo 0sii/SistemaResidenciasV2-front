@@ -182,17 +182,6 @@
                   </button> -->
                         }
 
-                        <!-- Descargar PDF de Aceptación de Anteproyecto (disponible desde estado 6+) -->
-                        @if((data?.proyecto?.idEstado ?? data?.proyecto?.IdEstado) >= 6 && (data?.proyecto?.idEstado ?? data?.proyecto?.IdEstado) !== 9) {
-                        <button pButton icon="pi pi-download"
-                          class="p-button-outlined p-button-success"
-                          label="Aceptación Anteproyecto (PDF)"
-                          pTooltip="Descargar el documento de aceptación del anteproyecto"
-                          [disabled]="descargandoAceptacionPdf"
-                          (click)="descargarAceptacionAnteproyecto()">
-                        </button>
-                        }
-
                         @if(
                         canRevisarAnteproyecto() &&
                         anteproyectoCerrado &&
@@ -1109,7 +1098,7 @@
       <!-- p-dialog de PrimeNG para visualizar el PDF -->
       <p-dialog header="Visualizando PDF" [(visible)]="displayDialog" [modal]="true" [closable]="true"
         [style]="{width: '80vw'}" (onHide)="liberarPdfUrl()">
-        <ngx-extended-pdf-viewer *ngIf="pdfUrl" [src]="pdfUrl" height="75vh" [showToolbar]="true"
+        <ngx-extended-pdf-viewer *ngIf="pdfUrl && pdfData" [src]="pdfData" height="75vh" [showToolbar]="true"
           [showSidebarButton]="false" [showFindButton]="false" [showOpenFileButton]="false" [showPrintButton]="false"
           [showDownloadButton]="true" [showPresentationModeButton]="false" [showRotateButton]="false"
           [showHandToolButton]="false" [showSpreadButton]="false" [showPropertiesButton]="false" [textLayer]="false"

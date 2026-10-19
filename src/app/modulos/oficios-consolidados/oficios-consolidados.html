@@ -3,10 +3,12 @@
 <div class="oficios-container">
 
   <div class="oficios-header">
-    <h2>Oficios consolidados por docente</h2>
+    <h2>Oficios de residencia profesional</h2>
     <p class="oficios-subtitulo">
-      Genera, en un solo PDF, el oficio con <strong>todos los proyectos vigentes</strong> de un
-      docente para un rol determinado (aunque tenga varios proyectos asignados).
+      Cada oficio se genera <strong>una sola vez</strong> con su número de oficio y se puede
+      descargar las veces que haga falta sin que el número cambie.
+      Asesor interno: un oficio por alumno · Revisor de reporte preliminar y Aceptación: uno por
+      proyecto con todos sus integrantes · Revisor de residencia: uno por docente con todos sus proyectos.
     </p>
   </div>
 
@@ -24,7 +26,7 @@
   </div>
 
   <div *ngIf="!rolSeleccionado" class="empty-msg">
-    Selecciona un rol para ver los docentes con proyectos asignados.
+    Selecciona un tipo de oficio para ver los docentes o proyectos disponibles.
   </div>
 
   <div *ngIf="loading" class="loading-wrapper">
@@ -32,7 +34,7 @@
   </div>
 
   <p-table
-    *ngIf="rolSeleccionado && !loading"
+    *ngIf="rolSeleccionado && rolSeleccionado !== 'ACEPTACION' && !loading"
     [value]="docentes"
     [paginator]="true"
     [rows]="10"
@@ -66,6 +68,47 @@
       <tr>
         <td colspan="3" class="empty-msg">
           No hay docentes con proyectos asignados en este rol.
+        </td>
+      </tr>
+    </ng-template>
+
+  </p-table>
+
+  <p-table
+    *ngIf="rolSeleccionado === 'ACEPTACION' && !loading"
+    [value]="proyectosAceptacion"
+    [paginator]="true"
+    [rows]="10"
+    [responsiveLayout]="'scroll'">
+
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Proyecto</th>
+        <th>Integrantes</th>
+        <th style="width:200px;">Acciones</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-row>
+      <tr>
+        <td>{{ row.titulo }}</td>
+        <td>{{ row.integrantes }}</td>
+        <td>
+          <button pButton type="button"
+            [label]="estaGenerandoAceptacion(row.idProyecto) ? 'Generando...' : 'Descargar aceptación'"
+            icon="pi pi-file-pdf"
+            severity="secondary"
+            [disabled]="estaGenerandoAceptacion(row.idProyecto)"
+            (click)="generarAceptacion(row)">
+          </button>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="3" class="empty-msg">
+          No hay proyectos con reporte preliminar aceptado.
         </td>
       </tr>
     </ng-template>

@@ -147,6 +147,8 @@ export class ProyectosComponent implements OnInit {
 
   // PDF viewer (MISMO enfoque que Seguimiento)
   pdfUrl: string | null = null;
+  // Bytes del PDF: se pasan al visor para que pdf.js no tenga que leer una URL blob: (bloqueada por la CSP)
+  pdfData: Uint8Array | null = null;
   displayPdfDialog = false;
   pdfFileName: string | null = null;
 
@@ -1762,18 +1764,22 @@ Esta acción lo dejará sin proyecto asignado.`
       next: (blob: Blob) => {
         if (!blob) return;
 
-        if (blob.type !== 'application/pdf') {
+        const tipo = (blob.type || '').toLowerCase();
+        if (tipo !== 'application/pdf' && tipo !== '' && tipo !== 'application/octet-stream') {
           this.showError('El archivo recibido no es un PDF.');
           return;
         }
+        const pdfBlob = tipo === 'application/pdf' ? blob : new Blob([blob], { type: 'application/pdf' });
 
-        const fileSizeInMB = blob.size / (1024 * 1024);
+        const fileSizeInMB = pdfBlob.size / (1024 * 1024);
         if (fileSizeInMB > 15) {
           this.showError('El PDF es demasiado grande para visualizarlo en línea.');
           return;
         }
 
-        this.pdfUrl = URL.createObjectURL(blob);
+        this.pdfUrl = URL.createObjectURL(pdfBlob);
+        this.pdfData = null;
+        pdfBlob.arrayBuffer().then(buf => { this.pdfData = new Uint8Array(buf); this.cdr.markForCheck(); });
         this.displayPdfDialog = true;
         this.cdr.detectChanges();
       },
@@ -1790,6 +1796,7 @@ Esta acción lo dejará sin proyecto asignado.`
       this.pdfUrl = null;
     }
     this.pdfFileName = null;
+    this.cdr.markForCheck();
   }
 
 
@@ -2512,34 +2519,47 @@ firmaCargoLinea1: ''
 
     // Reset para evitar que se quede el PDF anterior
     this.liberarPdfUrl();
-    this.pdfUrl = null;
 
     this.proyectosSvc.downloadDocumento(pid).subscribe({
       next: (blob: Blob) => {
         if (!blob) return;
 
-        // Validación: debe ser PDF
-        if (blob.type !== 'application/pdf') {
+        const tipo = (blob.type || '').toLowerCase();
+
+        // Imágenes (el backend permite subir JPG/PNG): se abren en otra pestaña
+        if (tipo.startsWith('image/')) {
+          const urlImg = URL.createObjectURL(blob);
+          window.open(urlImg, '_blank');
+          return;
+        }
+
+        // Algunos servidores/proxies devuelven octet-stream o vacío: lo tratamos como PDF
+        const esPdfValido = tipo === 'application/pdf' || tipo === '' || tipo === 'application/octet-stream';
+        if (!esPdfValido) {
           console.error('El archivo recibido no es un PDF:', blob.type);
           this.showError('El archivo recibido no es un PDF.');
           return;
         }
+        const pdfBlob = tipo === 'application/pdf' ? blob : new Blob([blob], { type: 'application/pdf' });
 
         // (Opcional) límite de tamaño
-        const fileSizeInMB = blob.size / (1024 * 1024);
+        const fileSizeInMB = pdfBlob.size / (1024 * 1024);
         if (fileSizeInMB > 15) {
           this.showError('El PDF es demasiado grande para visualizarlo en línea.');
           return;
         }
 
         // Crear URL del blob y abrir el dialog
-        this.pdfUrl = URL.createObjectURL(blob);
+        this.pdfUrl = URL.createObjectURL(pdfBlob);
+        this.pdfData = null;
+        pdfBlob.arrayBuffer().then(buf => { this.pdfData = new Uint8Array(buf); this.cdr.markForCheck(); });
         this.displayDialog = true;
+        // La app usa provideZonelessChangeDetection(): hay que notificar el cambio
+        this.cdr.detectChanges();
       },
       error: (e) => {
         console.error(e);
         this.showError('No se pudo cargar el documento. Intenta nuevamente.');
-
       }
     });
   }

@@ -142,6 +142,12 @@ export const routes: Routes = [
     data: { permiso: 'Perfil-Read' } // o el que definas
   },
   {
+    path: 'expediente',
+    component: Perfil,
+    canActivate: [AuthGuard, PermissionGuard],
+    data: { permiso: 'Perfil-Read' }
+  },
+  {
     path: 'docente',
     children: [
       {

@@ -1,5 +1,4 @@
 import { Component, inject, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
-import { HttpResponse } from '@angular/common/http';
 import { AuthService } from '../../service/auth.service';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -255,23 +254,6 @@ export class DocenteProyectoDashboard implements OnInit {
     this.cdr.markForCheck();
   }
 
-  private descargarPdfOficio(blob: Blob, nombreArchivo: string): void {
-    if (!blob || blob.size === 0) {
-      console.warn('PDF de oficio vacío o no disponible.');
-      return;
-    }
-
-    const url = URL.createObjectURL(blob);
-    const a   = document.createElement('a');
-    a.href    = url;
-    a.download = nombreArchivo;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
   confirmarAutoAsignacion(): void {
     if (!this.proyectoSeleccionado || !this.rolSeleccionadoAutoAsign) return;
 
@@ -281,16 +263,8 @@ export class DocenteProyectoDashboard implements OnInit {
       .autoAsignarme(this.proyectoSeleccionado.id, this.rolSeleccionadoAutoAsign)
       .pipe(finalize(() => { this.asignando = false; this.cdr.markForCheck(); }))
       .subscribe({
-        next: (res: any) => {
+        next: () => {
           this.showConfirmDialog = false;
-
-          if (res?.body instanceof Blob && res.body.size > 0) {
-            const cd    = res.headers?.get('Content-Disposition') ?? '';
-            const match = cd.match(/filename[^;=\n]*=(['"]?)([^'";\n]*)\1/);
-            const nombreArchivo = match?.[2]?.trim() || `Oficio_${this.rolSeleccionadoAutoAsign}.pdf`;
-
-            this.descargarPdfOficio(res.body, nombreArchivo);
-          }
 
           this.toast.add({
             severity: 'success',
@@ -303,102 +277,9 @@ export class DocenteProyectoDashboard implements OnInit {
           this.cargarDisponibles();
         },
         error: (err: any) => {
-          // Manejo de errores con body Blob (p.ej. respuesta PDF con error)
-          if (err?.error instanceof Blob) {
-            const reader = new FileReader();
-            reader.onload = () => {
-              let msg = 'No se pudo completar la asignación.';
-              try {
-                const json = JSON.parse(reader.result as string);
-                msg = json?.message ?? json ?? msg;
-              } catch {
-                msg = (reader.result as string) || msg;
-              }
-              this.toast.add({ severity: 'error', summary: 'Error', detail: msg, life: 10000 });
-              this.cdr.markForCheck();
-            };
-            reader.readAsText(err.error);
-            return;
-          }
-
-          const msg = err?.error?.message ?? err?.message ?? 'No se pudo realizar la asignación.';
-          this.toast.add({ severity: 'error', summary: 'Error', detail: msg, life: 8000 });
-        }
-      });
-  }
-
-  // ── Mis oficios (consolidado por rol) ───────────────────────────────────
-  private readonly ROL_CLAVE_BY_ID: Record<number, 'REVISOR_ANTEPROYECTO' | 'ASESOR_INTERNO' | 'REVISOR_RESIDENCIA'> = {
-    1: 'REVISOR_ANTEPROYECTO',
-    2: 'ASESOR_INTERNO',
-    3: 'REVISOR_RESIDENCIA'
-  };
-
-  generandoOficioRol: Record<string, boolean> = {};
-
-  /** Roles (de los que sí generan oficio) que el docente tiene actualmente asignados. */
-  get misRolesConOficio(): Array<{ clave: 'REVISOR_ANTEPROYECTO' | 'ASESOR_INTERNO' | 'REVISOR_RESIDENCIA'; label: string; cantidad: number }> {
-    const conteos = new Map<string, number>();
-
-    for (const p of this.proyectosAll) {
-      const clave = this.ROL_CLAVE_BY_ID[p.idTipoRelacion];
-      if (!clave) continue;
-      conteos.set(clave, (conteos.get(clave) ?? 0) + 1);
-    }
-
-    const labelByClave: Record<string, string> = {
-      REVISOR_ANTEPROYECTO: 'Revisor de reporte preliminar (anteproyecto)',
-      ASESOR_INTERNO: 'Asesor interno',
-      REVISOR_RESIDENCIA: 'Revisor de residencia'
-    };
-
-    return Array.from(conteos.entries()).map(([clave, cantidad]) => ({
-      clave: clave as any,
-      label: labelByClave[clave],
-      cantidad
-    }));
-  }
-
-  descargarMiOficio(clave: 'REVISOR_ANTEPROYECTO' | 'ASESOR_INTERNO' | 'REVISOR_RESIDENCIA'): void {
-    this.generandoOficioRol[clave] = true;
-    this.cdr.markForCheck();
-
-    this.proyectosService.regenerarMiOficioConsolidado(clave)
-      .pipe(finalize(() => { this.generandoOficioRol[clave] = false; this.cdr.markForCheck(); }))
-      .subscribe({
-        next: (res: HttpResponse<Blob>) => {
-          if (res.body instanceof Blob && res.body.size > 0) {
-            const cd    = res.headers?.get('Content-Disposition') ?? '';
-            const match = cd.match(/filename[^;=\n]*=(['"]?)([^'";\n]*)\1/);
-            const nombreArchivo = match?.[2]?.trim() || `Oficio_${clave}.pdf`;
-            this.descargarPdfOficio(res.body, nombreArchivo);
-
-            this.toast.add({
-              severity: 'success',
-              summary: 'Oficio generado',
-              detail: 'Se descargó el oficio con todos tus proyectos vigentes para ese rol.',
-              life: 5000
-            });
-          }
-        },
-        error: (err: any) => {
-          if (err?.error instanceof Blob) {
-            const reader = new FileReader();
-            reader.onload = () => {
-              let msg = 'No se pudo generar el oficio.';
-              try {
-                const json = JSON.parse(reader.result as string);
-                msg = json?.message ?? json ?? msg;
-              } catch {
-                msg = (reader.result as string) || msg;
-              }
-              this.toast.add({ severity: 'error', summary: 'Error', detail: msg, life: 8000 });
-              this.cdr.markForCheck();
-            };
-            reader.readAsText(err.error);
-            return;
-          }
-          const msg = err?.error?.message ?? err?.message ?? 'No se pudo generar el oficio.';
+          const msg = typeof err?.error === 'string'
+            ? err.error
+            : (err?.error?.message ?? err?.message ?? 'No se pudo realizar la asignación.');
           this.toast.add({ severity: 'error', summary: 'Error', detail: msg, life: 8000 });
         }
       });

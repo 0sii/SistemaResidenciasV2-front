@@ -216,6 +216,8 @@ export class Perfil implements OnInit {
   tiposExpediente: TipoExpedienteItem[] = [];
 
   loadingExpediente = false;
+  // Vista independiente accesible desde el menú lateral.
+  soloExpediente = false;
 
     // ===================== EXPEDIENTE (CATÁLOGO COMPLETO FALLBACK) =====================
   // Si tu API no regresa todos los tipos, este catálogo asegura que el listado SIEMPRE esté completo.
@@ -299,6 +301,8 @@ private readonly maxZipBytes = 300 * 1024 * 1024; // 300MB (ajusta)
 
   displayDialog: boolean = false;  // Controla la visibilidad del diálogo
   pdfUrl: string | null = null;
+  // Bytes del PDF: se pasan al visor para que pdf.js no tenga que leer una URL blob: (bloqueada por la CSP)
+  pdfData: Uint8Array | null = null;
 
   @ViewChild('fileInput') fileInput: ElementRef | undefined;  // Aquí se define la propiedad 'fileInput'
   public isBrowser: boolean = false;
@@ -309,6 +313,8 @@ private readonly maxZipBytes = 300 * 1024 * 1024; // 300MB (ajusta)
 
 
   async ngOnInit(): Promise<void> {
+
+    this.soloExpediente = this.router.url.split('?')[0] === '/expediente';
 
     if (this.isBrowser) {
       // Importar dinámicamente el módulo solo en el navegador
@@ -1405,6 +1411,8 @@ copiarTexto(text: string | null | undefined): void {
 
         // Crear la URL del Blob
         this.pdfUrl = URL.createObjectURL(blob);
+        this.pdfData = null;
+        blob.arrayBuffer().then(buf => { this.pdfData = new Uint8Array(buf); this.cdr.markForCheck(); });
 
         // Mostrar el diálogo
         this.displayDialog = true;

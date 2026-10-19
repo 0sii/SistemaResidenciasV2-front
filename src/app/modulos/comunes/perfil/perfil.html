@@ -15,12 +15,16 @@
     <div class="flex items-center justify-between px-6 pt-6 flex-wrap gap-4">
         <div class="mt-2 text-sm text-slate-600 dark:text-slate-300 flex flex-col gap-1">
             <div>
+                @if(soloExpediente) {
+                Apartado: <span class="font-semibold">Mi Expediente</span>
+                } @else {
                 Perfil activo:
                 <span class="font-semibold">
                     @if(isEstudiante){ Estudiante }
                     @else if(isDocente){ Docente }
                     @else { Usuario }
                 </span>
+                }
             </div>
 
             <div>
@@ -33,14 +37,14 @@
 
 
         <!-- Botones -->
-        @if(canEditPerfil && !editMode && !loading) {
+        @if(!soloExpediente && canEditPerfil && !editMode && !loading) {
         <button class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md shadow-md"
             (click)="entrarModoEdicion()">
             Editar
         </button>
         }
 
-        @if(canEditPerfil && editMode) {
+        @if(!soloExpediente && canEditPerfil && editMode) {
         <div class="flex gap-2">
             <button class="bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 rounded-md shadow-md"
                 (click)="guardar()">
@@ -68,6 +72,7 @@
 
     <form class="p-6 space-y-4" [formGroup]="form">
 
+        @if(!soloExpediente) {
         <!-- ===================== DATOS GENERALES (siempre) ===================== -->
         <div class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-6">
             <h3 class="text-xl font-semibold mb-4">Datos generales</h3>
@@ -409,8 +414,10 @@
         </div>
         }
 
+        }
+
         <!-- ===================== EXPEDIENTE (solo estudiante) ===================== -->
-        @if(isEstudiante && estudiante?.idProyecto !== 0) {
+        @if(soloExpediente && isEstudiante && estudiante?.idProyecto !== 0) {
         <div class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-6">
             <div class="flex items-center justify-between gap-3 flex-wrap">
                 <div>
@@ -450,7 +457,7 @@
                 <p-dialog header="Visualizando PDF" [(visible)]="displayDialog" [modal]="true" [closable]="true"
                     [style]="{width: '80vw'}">
 
-                    <ngx-extended-pdf-viewer *ngIf="pdfUrl" [src]="pdfUrl" height="75vh" [showToolbar]="true"
+                    <ngx-extended-pdf-viewer *ngIf="pdfUrl && pdfData" [src]="pdfData" height="75vh" [showToolbar]="true"
                         [showSidebarButton]="false" [showFindButton]="false" [showOpenFileButton]="false"
                         [showPrintButton]="false" [showDownloadButton]="true" [showPresentationModeButton]="false"
                         [showRotateButton]="false" [showHandToolButton]="false" [showSpreadButton]="false"
@@ -666,6 +673,7 @@
         }
 
 
+        @if(!soloExpediente) {
         <!-- ===================== SEGURIDAD (siempre) ===================== -->
         <div class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-6">
             <div class="flex items-center justify-between gap-3 flex-wrap">
@@ -684,6 +692,7 @@
                 }
             </div>
         </div>
+        }
 
     </form>
 

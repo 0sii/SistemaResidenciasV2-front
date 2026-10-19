@@ -1355,7 +1355,7 @@
 
     <p-dialog header="Visualizando PDF" [(visible)]="displayDialog" [modal]="true" [closable]="true"
       [style]="{ width: '80vw', height: '80vh' }" [draggable]="false" [resizable]="false" (onHide)="liberarPdfUrl()">
-      <ngx-extended-pdf-viewer *ngIf="pdfUrl" [src]="pdfUrl" height="100%" [showToolbar]="true"
+      <ngx-extended-pdf-viewer *ngIf="pdfUrl && pdfData" [src]="pdfData" height="100%" [showToolbar]="true"
         [showSidebarButton]="false" [showFindButton]="false" [showOpenFileButton]="false" [showPrintButton]="false"
         [showDownloadButton]="true" [showPresentationModeButton]="false" [showRotateButton]="false"
         [showHandToolButton]="false" [showSpreadButton]="false" [showPropertiesButton]="false" [textLayer]="false"
@@ -1374,7 +1374,7 @@
     <p-dialog header="Visualizando PDF" [(visible)]="displayPdfDialog" [modal]="true" [closable]="true"
       [style]="{ width: '80vw', height: '80vh' }" [draggable]="false" [resizable]="false" (onHide)="liberarPdfUrl()">
 
-      <ngx-extended-pdf-viewer *ngIf="pdfUrl" [src]="pdfUrl" height="100%" [showToolbar]="true"
+      <ngx-extended-pdf-viewer *ngIf="pdfUrl && pdfData" [src]="pdfData" height="100%" [showToolbar]="true"
         [showSidebarButton]="false" [showFindButton]="false" [showOpenFileButton]="false" [showPrintButton]="false"
         [showDownloadButton]="true" [showPresentationModeButton]="false" [showRotateButton]="false"
         [showHandToolButton]="false" [showSpreadButton]="false" [showPropertiesButton]="false" [textLayer]="false"

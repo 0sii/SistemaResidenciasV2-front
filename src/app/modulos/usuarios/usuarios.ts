@@ -290,6 +290,7 @@ export class Usuarios implements OnInit {
       noControl: '' // ✅ nuevo
     });
     this.mostrarNoControl = false;
+    this.aplicarValidacionesNombreEstudiante(false);
     this.permisosCalculados = [];
     this.showDialog = true;
   }
@@ -298,6 +299,7 @@ export class Usuarios implements OnInit {
   openEditDialog(usuario: Usuario): void {
     this.dialogMode = 'edit';
     this.selectedUsuario = usuario;
+    this.aplicarValidacionesNombreEstudiante(false);
 
     this.form.patchValue({
       nombre: usuario.nombre,
@@ -315,6 +317,7 @@ export class Usuarios implements OnInit {
         // Si ya tiene rol estudiante, checar si existe registro y precargar noControl
         if (this.rolEstudianteId != null && ids.includes(this.rolEstudianteId)) {
           this.mostrarNoControl = true;
+          this.aplicarValidacionesNombreEstudiante(true);
           this.checarEstudianteExistentePorUsuario(usuario.id);
         } else {
           this.mostrarNoControl = false;
@@ -391,6 +394,9 @@ export class Usuarios implements OnInit {
     // Mostrar / ocultar noControl
     this.mostrarNoControl = esEstudiante;
 
+    // Estudiante: la BD exige nombre y apellidos solo con letras (apellido materno obligatorio)
+    this.aplicarValidacionesNombreEstudiante(esEstudiante);
+
     if (!esEstudiante) {
       this.noControlReadonly = false;
       this.noControlYaExistiaPorUsuario = false;
@@ -407,6 +413,33 @@ export class Usuarios implements OnInit {
     } else {
       // modo add: pedir noControl sí o sí
       this.configurarValidacionesNoControl(true);
+    }
+  }
+
+  // Misma regex que los CHECK de la tabla Estudiantes en el backend
+  private readonly soloLetrasRegex = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+( [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)*$/;
+
+  private aplicarValidacionesNombreEstudiante(esEstudiante: boolean): void {
+    const campos: Array<[string, boolean]> = [
+      ['nombre', true],
+      ['apellidoPaterno', true],
+      ['apellidoMaterno', false]
+    ];
+
+    for (const [campo, obligatorioSiempre] of campos) {
+      const ctrl = this.form.get(campo);
+      if (!ctrl) continue;
+
+      const validators = [Validators.maxLength(100)];
+      if (obligatorioSiempre) validators.unshift(Validators.required);
+
+      if (esEstudiante) {
+        if (!obligatorioSiempre) validators.unshift(Validators.required);
+        validators.push(Validators.pattern(this.soloLetrasRegex));
+      }
+
+      ctrl.setValidators(validators);
+      ctrl.updateValueAndValidity({ emitEvent: false });
     }
   }
 
@@ -651,13 +684,14 @@ export class Usuarios implements OnInit {
           },
           error: err => {
             console.error(err);
+            const detalleRoles = err?.error?.message || 'hubo error al asignar roles.';
 
             this.enviarCredencialesPorCorreo(nuevo.correo, tempPass).subscribe({
               next: () => {
                 this.messageService.add({
                   severity: 'warn',
                   summary: 'Usuario creado',
-                  detail: `Se creó el usuario ${nuevo.correo} y se enviaron credenciales, pero hubo error al asignar roles.`,
+                  detail: `Se creó el usuario ${nuevo.correo} y se enviaron credenciales, pero no se asignaron los roles: ${detalleRoles}`,
                   life: 10000
                 });
                 this.showDialog = false;
@@ -726,7 +760,8 @@ export class Usuarios implements OnInit {
               this.messageService.add({
                 severity: 'warn',
                 summary: 'Usuario actualizado',
-                detail: 'Los datos se actualizaron, pero hubo un error al guardar sus roles', life: 10000
+                detail: 'Los datos se actualizaron, pero no se guardaron los roles: ' +
+                  (err?.error?.message || 'error del servidor.'), life: 10000
               });
               this.showDialog = false;
               this.cargarUsuarios();
@@ -754,8 +789,15 @@ export class Usuarios implements OnInit {
   }
 
   private enviarCredencialesPorCorreo(correo: string, password: string) {
-    const subject = 'Acceso al Sistema';
-    const body = `Su contraseña temporal es: ${password}`;
+    const subject = 'Acceso al Sistema de Residencias';
+    const body = `
+      <p>Hola,</p>
+      <p>Tu acceso al <b>Sistema de Residencias</b> ha sido creado.</p>
+      <p><b>Usuario:</b> ${String(correo || '').trim().toLowerCase()}</p>
+      <p><b>Contraseña temporal:</b> ${password}</p>
+      <p>Te recomendamos cambiar tu contraseña al ingresar.</p>
+      <p style="margin-top:16px;">Saludos.<br/>Sistema de Vinculación y Residencias</p>
+    `;
 
     return this.emailSvc.sendEmail(correo, subject, body);
   }
@@ -946,7 +988,7 @@ export class Usuarios implements OnInit {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo eliminar el usuario', life: 10000
+          detail: err?.error?.message || 'No se pudo eliminar el usuario', life: 10000
         });
       }
     });
